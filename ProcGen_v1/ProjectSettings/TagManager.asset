@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - Spikes
+  - Ice
+  - Sand
+  - Lava
+  - HiddenButton
+  - WizardBlast_1
+  - Enemy
+  - Exit
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - SpecialTile
+  - Water
+  - UI
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: Floor
+    uniqueID: 1383395443
+    locked: 0
+  - name: Traps
+    uniqueID: 853031533
+    locked: 0
+  - name: Wall
+    uniqueID: 2211532643
+    locked: 0
+  - name: Characters
+    uniqueID: 804362127
+    locked: 0
+  - name: Projectiles
+    uniqueID: 1040826917
+    locked: 0
