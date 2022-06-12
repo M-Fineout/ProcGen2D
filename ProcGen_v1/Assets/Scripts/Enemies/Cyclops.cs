@@ -1,11 +1,8 @@
 ﻿using Assets.Code.Extension;
 using Assets.Code.Global;
-using Assets.Code.Util;
-using System;
+using Assets.Code.Helper;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Assets.Scripts.Enemies
@@ -14,61 +11,33 @@ namespace Assets.Scripts.Enemies
     {
         protected override int Health { get; set; } = 3;
 
+        private const int pathLength = 6;
+        private const float feetPositionOffset = .16f; //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
+
         private GameObject player;
         private Rigidbody2D rb;
         private BoxCollider2D boxCollider;
         private Animator anim;
 
+        private bool delayed = true;
+
+        //movement dependencies
+        private AStarWorker worker;
         private List<Vector2> travelWaypoints = new();
         private int currentTravelWaypoint;
         private bool travelling;
+        private bool waitingForRoute;
 
+        //movement
         private float waypointRadius = 0.0005f;
         private float moveSpeed = 15f;
         private Vector2 moveDirection;
         public int facing = -1; //TODO: Convert to Enum
 
-        //A*
-        internal class AStarNode
-        {
-            public Vector2 location;
-            public float G;
-            public float H;
-            public float F;
-            //public GameObject marker;
-            public AStarNode parent;
-
-            public AStarNode(Vector2 l, float g, float h, float f, AStarNode p)
-            {
-                location = l;
-                G = g;
-                H = h;
-                F = f;
-                //marker = m;
-                parent = p;
-            }
-        }
-
-        private const float SCALE = 0.16f;
-        private float boardWidth = 24 - 1 * SCALE;
-        private float boardLength = 24 - 1 * SCALE;
-        private readonly List<Vector2> directions = new() { Vector2.right * SCALE, Vector2.up * SCALE, Vector2.left * SCALE, Vector2.down * SCALE };
-
-        private bool onPath;
-        private int pathLength = 3;
-        private int currentWaypoint = 0;
-        private bool searching;
-
-        private List<Vector2> availableSpaces;
-        private List<Vector2> wallSpaces;
-        private Dictionary<Vector2, int> blueprints;
-        private List<Vector2> waypoints = new();
-        private List<AStarNode> open = new();
-        private List<AStarNode> closed = new();
-
-        private AStarNode startNode;
-        private AStarNode goalNode;
-        private AStarNode lastPos;
+        //pursuit
+        private float pursuitRadius = 1.5f;
+        private Vector2? target = null;
+        private bool inPursuit;
 
         private void Start()
         {
@@ -78,21 +47,12 @@ namespace Assets.Scripts.Enemies
             anim = GetComponent<Animator>();
             base.Prime();
 
-            EventBus.instance.RegisterCallback(GameEvent.EmptyTilesFound, EmptyTilesReceived);
-            EventBus.instance.RegisterCallback(GameEvent.WallTilesFound, WallTilesReceived);
-            EventBus.instance.RegisterCallback(GameEvent.BlueprintsOutgoing, BlueprintsReceived);
-            EventBus.instance.TriggerEvent(GameEvent.EmptyTilesRequested, new EventMessage());
-            EventBus.instance.TriggerEvent(GameEvent.WallTilesRequested, new EventMessage());
-            EventBus.instance.TriggerEvent(GameEvent.BlueprintsRequested, new EventMessage());
-
-            Registrations.Add(GameEvent.EmptyTilesFound, EmptyTilesReceived);
+            OnboardWorker();
+            StartCoroutine(nameof(Delay));
         }
 
- 
         private void Update()
         {
-            if (searching) return;
-
             if (travelling)
             {
                 //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
@@ -106,25 +66,26 @@ namespace Assets.Scripts.Enemies
                     facing = 2;
                     spriteRenderer.flipX = normal.x < 0;
                 }
+
                 anim.SetInteger("facing", facing);
                 return;
             }
- 
-            if (!onPath)
+            else if (!waitingForRoute && !delayed)
             {
-                StartNextPath();
-                //Debug.Log($"Path found: Start: {startNode.location}, End: {goalNode.location}");
+                RequestRoute();
             }
-
-            //We need to put this in a coroutine. We keep getting concurrent searches somehow.
-            searching = true;
-            while (onPath)
+            
+            //Pursuit
+            var distanceFromPlayer = (player.transform.position - GetPositionOffset()).magnitude;
+            if (!inPursuit && distanceFromPlayer <= pursuitRadius)
             {
-                Search(lastPos);
+                StartPursuit();
             }
-
-            GetPath();
-            searching = false;
+            if (inPursuit && distanceFromPlayer > pursuitRadius)
+            {
+                Debug.Log($"Stopping pursuit. {distanceFromPlayer} away from player");
+                inPursuit = false;
+            }
         }
         
         private void FixedUpdate()
@@ -134,15 +95,13 @@ namespace Assets.Scripts.Enemies
             if (currentTravelWaypoint > travelWaypoints.Count - 1)
             {
                 //Debug.Log("Resetting");
-                currentTravelWaypoint = 0;
-                travelling = false;
-                travelWaypoints.Clear();
+                ResetTravelPlans();
                 return;
             }
 
             //Move
             var goal = travelWaypoints[currentTravelWaypoint];
-            moveDirection = goal - transform.position.ToVector2();
+            moveDirection = goal - GetPositionOffset().ToVector2();
             var onLastWaypoint = currentTravelWaypoint == travelWaypoints.Count - 1;
        
             if (moveDirection.magnitude <= waypointRadius)
@@ -150,7 +109,9 @@ namespace Assets.Scripts.Enemies
                 //Debug.Log($"Waypoint {currentTravelWaypoint} reached");
                 if (onLastWaypoint)
                 {
-                    transform.position = travelWaypoints[currentTravelWaypoint]; //We need to make sure we arrive at the waypoint
+                    //We need to make sure we arrive at the waypoint
+                    //We add feetPositionOffset back here because in all of our move calculations we remove the offset. Adding it back here will allow for smooth movement.
+                    transform.position = new Vector2(travelWaypoints[currentTravelWaypoint].x, travelWaypoints[currentTravelWaypoint].y + feetPositionOffset); 
                 }
              
                 currentTravelWaypoint++;
@@ -160,161 +121,54 @@ namespace Assets.Scripts.Enemies
             rb.MovePosition(rb.position + Time.deltaTime * moveSpeed * moveDirection);
         }
 
-        private void EmptyTilesReceived(EventMessage message)
+        /// <summary>
+        /// Provides a small random delay so that enemies won't all appear to move in sync
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator Delay()
         {
-            availableSpaces = (List<Vector2>)message.Payload;
-            CalculateWaypoints();
+            yield return new WaitForSeconds(Random.Range(0, 4));
+            delayed = false;
         }
 
-        private void WallTilesReceived(EventMessage message)
+        private void OnboardWorker()
         {
-            wallSpaces = (List<Vector2>)message.Payload;
+            worker = new AStarWorker(gameObject, pathLength, feetPositionOffset);
         }
 
-        private void BlueprintsReceived(EventMessage message)
+        private void RequestRoute()
         {
-            blueprints = (Dictionary<Vector2, int>)message.Payload;
-        }
+            waitingForRoute = true;
+            travelWaypoints.Clear();
 
-        private void CalculateWaypoints()
-        {
-            for (var i = 0; i < pathLength; i++)
+            if (inPursuit)
             {
-                waypoints.Add(availableSpaces[UnityEngine.Random.Range(0, availableSpaces.Count)]);
+                target = player.transform.position;
             }
-        }
+            travelWaypoints = worker.CalculateRoute(target);
 
-        private void StartNextPath()
-        {
-            startNode = new AStarNode(transform.position, 0, 0, 0, null);
-            //Debug.Log($"Starting at node {startNode.location.x}, {startNode.location.y}");
-
-            goalNode = new AStarNode(waypoints[currentWaypoint], 0, 0, 0, null);
-
-            open.Clear();
-            closed.Clear();
-
-            open.Add(startNode);
-            lastPos = startNode;
-
-            onPath = true;
-        }
-
-        private void Search(AStarNode thisNode)
-        {
-            if (thisNode.location == goalNode.location)
-            {
-                //Debug.Log($"Goal found!");
-                //Restart loop, or continue to next waypoint
-                currentWaypoint++;
-                if (currentWaypoint == waypoints.Count)
-                {
-                    currentWaypoint = 0;
-                }
-                //Debug.Log($"Next waypoint {currentWaypoint}");
-                onPath = false;
-                return;
-            }
-
-            foreach (var dir in directions)
-            {
-                var neighbor = dir + thisNode.location;
-
-                if (blueprints.ContainsKey(neighbor) && blueprints[neighbor] == 1)
-                {
-                    Debug.Log("Hit wall");
-                    continue;
-                }
-                if (!blueprints.ContainsKey(neighbor))
-                {
-                    Debug.Log("Neighbor space not found in blueprints!");
-                }
-                
-                if (neighbor.x < SCALE || neighbor.x >= boardWidth ||
-                    neighbor.y < SCALE || neighbor.y >= boardLength) //Neighbor is outside of board
-                {
-                    //Debug.Log($"neighbor outside of bounds {neighbor.x}, {neighbor.y}");
-                    continue;
-                }
-
-                if (IsClosed(neighbor)) continue; //Already checked
-
-                //NOTE: g and h are the 2 variables that we identify as optimal
-                //In the case of escaping a maze, that happens to be distance between neighbors and the distance from the goal
-                //This is super simplified, but one could imagine where other factors would influence the g and h values
-                //Requiring a more robust determination.
-                //I.E. what if not all paths were of equal value when reaching goal?
-                //If there were traps for example, we would account for those in the g and h values
-
-                //Pythagoreas
-                var g = Vector2.Distance(thisNode.location, neighbor) + lastPos.G; //Add the predecessor's distance
-                                                                                                        
-                var h = Vector2.Distance(neighbor, goalNode.location);
-                var f = g + h;
-
-                if (!UpdateNode(neighbor, g, h, f, thisNode))
-                {
-                    open.Add(new AStarNode(neighbor, g, h, f, thisNode));
-                }
-            }
-
-            //Grab our lowest F value
-            open = open.OrderBy(p => p.F).ToList();
-            var bestCandidate = open.ElementAt(0);
-            closed.Add(bestCandidate); //Set it to closed
-            open.RemoveAt(0); //No longer in contention
-            lastPos = bestCandidate; //Set as our new position to continue the search
-        }
-
-        private bool IsClosed(Vector2 location)
-        {
-            return closed.Any(x => x.location.Equals(location));
-            //foreach (var node in closed)
-            //{
-            //    if (node.location.Equals(location))
-            //        return true;
-            //}
-
-            //return false;
-        }
-
-        private bool UpdateNode(Vector2 pos, float g, float h, float f, AStarNode parent)
-        {
-            var node = open.FirstOrDefault(x => x.location.Equals(pos));
-            if (node == null) return false;
-
-            node.G = g;
-            node.H = h;
-            node.F = f;
-            node.parent = parent;
-            return true;
-            //foreach (var node in open)
-            //{
-            //    if (node.location.Equals(pos))
-            //    {
-            //        node.G = g;
-            //        node.H = h;
-            //        node.F = f;
-            //        node.parent = parent;
-            //        return true;
-            //    }
-            //}
-
-            //return false;
-        }
-
-        private void GetPath()
-        {
-            while (lastPos != null)
-            {
-                //Add waypoint to our list
-                travelWaypoints.Add(lastPos.location);
-                lastPos = lastPos.parent;
-            }
-
-            travelWaypoints.Reverse();
+            target = null;
             travelling = true;
-           //Debug.Log($"Path built, starting travel, {travelWaypoints.Count} waypoints");
+            waitingForRoute = false;
+        }
+
+        private void ResetTravelPlans()
+        {
+            currentTravelWaypoint = 0;
+            travelling = false;
+            travelWaypoints.Clear();
+        }
+
+        private Vector3 GetPositionOffset()
+        {
+            return new Vector3(transform.position.x, transform.position.y - feetPositionOffset, transform.position.z);
+        }
+
+        private void StartPursuit()
+        {
+            Debug.Log("Pursuing player!");
+            inPursuit = true;
+            ResetTravelPlans();
         }
 
         #region Next Steps

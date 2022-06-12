@@ -96,7 +96,8 @@ public class BoardManager : MonoBehaviour
 
         SetupFloor();
         SetupWalls();
-        SetupObstructions();
+        //SetupObstructionsBoxWithDoor();
+        SetupObstructionsConeMaze();
         SetupExit();
         //SetupTraps();
         SetupPlayer();
@@ -105,16 +106,16 @@ public class BoardManager : MonoBehaviour
         //SetupEnemiesTesting(wizard);
         SetupEnemiesTesting(cyclops);
 
-
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
+        var enemySpaces = BoardMap.Where(x => x.Value == cyclops).Select(x => x.Key).ToList();
 
-        //New Dictionary<Vector3, int>
-        //Key = location, int = 0/1 (empty/wall)
-        //Send to AStar
-
-        EmptyTileSpaces.ForEach(x => Blueprints.Add(x, 0));
-        WallTileSpaces.ForEach(x => Blueprints.Add(x, 1));
+        EmptyTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
+        enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
+        WallTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 1));
+        //Add cyclops static location to blueprints for testing
+        //Blueprints.Add(new Vector2(2.56f, 3.04f), 0);
+        //Blueprints.Add(new Vector2(0.32f, 2.72f), 0);
     }
 
     private bool IsWall(GameObject gameObject)
@@ -159,12 +160,13 @@ public class BoardManager : MonoBehaviour
 
     }
 
-    private void SetupObstructions()
+    private void SetupObstructionsBoxWithDoor()
     {
-        //for (var y = 7; y < 17; y++)
-        //{
-        //    AddToBoard(7, y, bottomWall);
-        //}
+        for (var y = 7; y < 17; y++)
+        {
+            if (y == 12) continue;
+            AddToBoard(7, y, bottomWall);
+        }
 
         for (var y = 7; y < 17; y++)
         {
@@ -177,6 +179,23 @@ public class BoardManager : MonoBehaviour
             AddToBoard(x, 17, bottomWall);
         }
 
+    }
+
+    private void SetupObstructionsConeMaze()
+    {
+        var count = 0;
+        for (var x = 1; x < boardWidth - 1; x++)
+        {
+            for (var y = 2; y < boardLength - 1; y++)
+            {
+                if (count == 8)
+                {
+                    AddToBoard(x, y, bottomWall);
+                    count = 0;
+                }
+                count++;
+            }
+        }
     }
 
     private void SetupExit()
@@ -272,7 +291,13 @@ public class BoardManager : MonoBehaviour
 
         if (enemy == cyclops)
         {
-            AddToBoard(16, 19, enemy);
+            //AddToBoard(16, 19, enemy);
+            AddToBoard(2, 17, enemy);
+            //AddToBoard(5, 12, enemy);
+            //AddToBoard(5, 11, enemy);
+            //AddToBoard(4, 14, enemy);
+            //AddToBoard(3, 19, enemy);
+            //AddToBoard(2, 11, enemy);
         }
     }
 
