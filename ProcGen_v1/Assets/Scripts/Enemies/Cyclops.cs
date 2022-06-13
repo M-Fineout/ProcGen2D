@@ -39,6 +39,9 @@ namespace Assets.Scripts.Enemies
         private Vector2? target = null;
         private bool inPursuit;
 
+        //attack
+        private float attackRadius = 0.32f; //2 spaces
+
         private void Start()
         {
             player = GameObject.FindGameObjectWithTag(Tags.Player);
@@ -74,9 +77,10 @@ namespace Assets.Scripts.Enemies
             {
                 RequestRoute();
             }
-            
+
             //Pursuit
-            var distanceFromPlayer = (player.transform.position - GetPositionOffset()).magnitude;
+            var playerDirection = (player.transform.position - GetPositionOffset()).ToVector2();
+            var distanceFromPlayer = playerDirection.magnitude;
             if (!inPursuit && distanceFromPlayer <= pursuitRadius)
             {
                 StartPursuit();
@@ -86,8 +90,30 @@ namespace Assets.Scripts.Enemies
                 Debug.Log($"Stopping pursuit. {distanceFromPlayer} away from player");
                 inPursuit = false;
             }
+
+            //Attack
+            if (distanceFromPlayer < attackRadius && IsFacingPlayer(playerDirection))
+            {
+                Attack();
+            }
         }
-        
+
+        private bool IsFacingPlayer(Vector2 playerDirection)
+        {
+            //May be better to use a raycast here since 'facing' isn't always reliable
+            //Medusa's AttackLanded code uses a raycast to detect the player. We could consider that here.
+            //On hit, we attack.
+
+            var normalized = playerDirection.normalized;
+            var normalRounded = new Vector2(Mathf.Round(normalized.x), Mathf.Round(normalized.y));
+            if (normalRounded.x == 0)
+            {
+                return facing == (int)normalRounded.y;
+            }
+
+            return spriteRenderer.flipX == normalRounded.x < 0;
+        }
+
         private void FixedUpdate()
         {
             if (!travelling || travelWaypoints.Count == 0) return;
@@ -171,6 +197,12 @@ namespace Assets.Scripts.Enemies
             ResetTravelPlans();
         }
 
+        private void Attack()
+        {
+            //anim
+            //swing, batter batter
+            Debug.Log("Attacking player");
+        }
         #region Next Steps
 
         //NOTE:
