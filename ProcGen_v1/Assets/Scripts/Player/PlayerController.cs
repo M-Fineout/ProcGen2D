@@ -39,6 +39,7 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
+        Debug.Log($"Friction: {boxCollider.friction}");
 
         EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
     }
@@ -187,15 +188,25 @@ public class PlayerController : MonoBehaviour
         {
             Debug.Log("Level over!");
             EventBus.instance.TriggerEvent(GameEvent.LevelCompleted, new EventMessage());
-        }         
+        }
+        else if (collision.CompareTag(Tags.Enemy))
+        {
+            Debug.Log("Collided with enemy!");
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        Debug.Log("OnCollisionEnter2D");
+
         if (collision.gameObject.CompareTag("Lava"))
         {
             Debug.Log("Collided");
             StartCoroutine(nameof(Melt));
+        }
+        if (collision.gameObject.CompareTag(Tags.Enemy))
+        {
+            Debug.Log("Collided with enemy");
         }
     }
 

@@ -36,6 +36,9 @@ namespace Assets.Code.Helper
         private readonly int PathLength;
         private readonly float FeetPositionOffset;
 
+        //Debugging
+        private Vector2 _lastNeighbor;
+
         public AStarWorker(GameObject client, int pathLength, float feetPosOffset = 0)
         {
             PathLength = pathLength;
@@ -99,9 +102,9 @@ namespace Assets.Code.Helper
         {
             var feetPos = GetPositionOffset();
             startNode = new AStarNode(new Vector2((float)Math.Round(feetPos.x, 2), (float)Math.Round(feetPos.y, 2)), 0, 0, 0, null);
-            //Debug.Log($"Starting at node {startNode.location.x}, {startNode.location.y}");
+            Debug.Log($"Starting at node {startNode.location.x}, {startNode.location.y}");
 
-            Debug.Log(goal.HasValue ? goal.Value : "");
+            //Debug.Log(goal.HasValue ? goal.Value : "");
             var goalLocation = goal.HasValue ? NormalizeToBoard(goal.Value) : waypoints[currentWaypoint];
             goalNode = new AStarNode(goalLocation, 0, 0, 0, null);
 
@@ -112,20 +115,49 @@ namespace Assets.Code.Helper
             lastPos = startNode;
 
             search = true;
+            _lastNeighbor = Vector2.zero;
         }
 
+        /// <summary>
+        /// Takes a raw Vector2 position in and normalizes it to be a valid tile (x % SCALE = 0, y % SCALE = 0) for use in the A* Algorithm.
+        /// </summary>
+        /// <param name="goal"></param>
+        /// <remarks>This is still only partially fail-safe
+        /// <list type="bullet">
+        /// <item>If our 'closest' calculated tile is not valid, we try the tiles adjacent to it in the 4 cardinal directions, but if that fails we will error out</item>
+        /// <item>Typically the client is close to the goal already, so this can return the same tile that our <see cref="startNode"/> is set to (resulting in a path of 0)</item>
+        /// </list>
+        /// </remarks>
+        /// <returns></returns>
         private Vector2 NormalizeToBoard(Vector2 goal)
         {
+            //Find closest valid tile to passed in goal location
             var normalizedToBoard = new Vector2();
 
             //Are we closer to Math.Floor or Math.Floor + 1. Find out, then multiply by our scale to get a valid tile for calculation
+            //.08 = SCALE * 0.5
             var xRemainder = goal.x % SCALE;
             normalizedToBoard.x = xRemainder >= .08 ? (float)(Math.Floor(goal.x / SCALE) + 1) * SCALE : (float)Math.Floor(goal.x / SCALE) * SCALE;
 
             var yRemainder = goal.y % SCALE;
             normalizedToBoard.y = yRemainder >= .08 ? (float)(Math.Floor(goal.y / SCALE) + 1) * SCALE : (float)Math.Floor(goal.y / SCALE) * SCALE;
 
-            //Debug.Log($"Normalized to board: {normalizedToBoard.x}, {normalizedToBoard.y}");
+            //If our 'closest' tile is not an empty space, it is not a valid goal.
+            //Try all 4 cardinal neighbors of the space instead.
+            var count = 0;
+            var closest = normalizedToBoard; //Capture our original value
+            if (!availableSpaces.Contains(normalizedToBoard))
+            {               
+                foreach (var dir in  directions)
+                {
+                    normalizedToBoard = dir + closest;
+                    if (availableSpaces.Contains(normalizedToBoard)) break;
+                    Debug.Log($"Trying direction {count}. New Coordinates: {normalizedToBoard.x}, {normalizedToBoard.y}");
+                    count++;
+                }
+            }
+
+            Debug.Log($"Goal: {goal.x}, {goal.y} was normalized to board: {normalizedToBoard.x}, {normalizedToBoard.y}. Count: {count}");
             return normalizedToBoard;
         }
 
@@ -133,15 +165,7 @@ namespace Assets.Code.Helper
         {
             if (thisNode.location == goalNode.location)
             {
-                Debug.Log($"Goal found!");
-                //Restart loop, or continue to next waypoint
-                currentWaypoint++;
-                if (currentWaypoint == waypoints.Count)
-                {
-                    currentWaypoint = 0;
-                }
-                //Debug.Log($"Next waypoint {currentWaypoint}");
-                search = false;
+                EndSearch();        
                 return;
             }
 
@@ -197,6 +221,22 @@ namespace Assets.Code.Helper
                 {
                     open.Add(new AStarNode(neighborNormalized, g, h, f, thisNode));
                 }
+
+                _lastNeighbor = neighborNormalized;
+            }
+            
+            if (open.Count == 0)
+            {
+                //We have exhausted all possibilities without reaching goal
+                GetPath();
+                DrawPath();
+                DrawClosed();
+                //TODO:
+                //Draw out our path (would be good to see what we actually calculated)
+                //Return 5 wp's to the client so that they can at least keep moving (They'll make another request once they are through, so this should be a decent solution)
+                //We need to still refresh our settings as seen in the "if (thisNode.location == goalNode.location)" block above
+                Debug.Log($"Waypoints on path: {travelWaypoints.Count}");
+                Debug.Log($"Made it to index error. Closed: {closed.Count}, , Neighbor Not added last: {_lastNeighbor.x}, {_lastNeighbor.y}. Goal: {goalNode.location.x}, {goalNode.location.y}");
             }
 
             //Grab our lowest F value
@@ -205,6 +245,22 @@ namespace Assets.Code.Helper
             closed.Add(bestCandidate); //Set it to closed
             open.RemoveAt(0); //No longer in contention
             lastPos = bestCandidate; //Set as our new position to continue the search
+        }
+
+        private void EndSearch()
+        {
+            Debug.Log("Closed: " + closed.Count);
+            Debug.Log($"Goal found!");
+
+            //Restart loop, or continue to next waypoint
+            //Do we want to increase this even when the goal was client defined?
+            currentWaypoint++;
+            if (currentWaypoint == waypoints.Count)
+            {
+                currentWaypoint = 0;
+            }
+
+            search = false;
         }
 
         private bool IsClosed(Vector2 location)
@@ -266,6 +322,28 @@ namespace Assets.Code.Helper
         private Vector3 GetPositionOffset()
         {
             return new Vector3(Client.transform.position.x, Client.transform.position.y - FeetPositionOffset, Client.transform.position.z);
+        }
+
+        /// <summary>
+        /// For debugging purposes. Shows the path that has been calculated up until we exhausted all spaces.
+        /// </summary>
+        private void DrawPath()
+        {
+            for (var i = 0; i < travelWaypoints.Count - 1; i++)
+            {
+                Debug.DrawLine(travelWaypoints[i], travelWaypoints[i + 1], Color.red, 0.2f);
+            }
+        }
+
+        /// <summary>
+        /// For debugging purposes. Shows the closed spaces that have been calculated up until we exhausted all spaces.
+        /// </summary>
+        private void DrawClosed()
+        {
+            for (var i = 0; i < closed.Count; i++)
+            {
+                Debug.DrawLine(closed[i].location, new Vector2(closed[i].location.x + .04f, closed[i].location.y + .04f), Color.green, 0.2f);
+            }
         }
     }
 

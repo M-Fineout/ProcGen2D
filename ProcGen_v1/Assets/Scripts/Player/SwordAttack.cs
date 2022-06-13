@@ -33,7 +33,14 @@ namespace Assets.Scripts.Player
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            
+            if (!other.enabled)
+            {
+                Debug.Log($"{other.gameObject.name} triggered swordAttack when disabled.");
+            }
+            if (!other.isTrigger) return;
+
+            Debug.Log($"{other.gameObject.name} triggered swordAttack trigger event, and is set to trigger");
+
             if (other.CompareTag(Tags.Enemy))
             {
                 var enemy = other.GetComponent<Enemy>();
