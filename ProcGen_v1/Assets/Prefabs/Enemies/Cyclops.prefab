@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 2431436204493339727}
   - component: {fileID: 7197133913839781593}
   - component: {fileID: 1248305065083477220}
+  - component: {fileID: 1394975855162717992}
   m_Layer: 0
   m_Name: Cyclops
   m_TagString: Enemy
@@ -128,7 +129,7 @@ Rigidbody2D:
   m_Material: {fileID: 0}
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 0
 --- !u!61 &2431436204493339727
 BoxCollider2D:
@@ -143,7 +144,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.006035626, y: -0.21875012}
+  m_Offset: {x: -0.006035626, y: -0.2173701}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -154,7 +155,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.078014255, y: 0.022061586}
+  m_Size: {x: 0.078014255, y: 0.024821639}
   m_EdgeRadius: 0
 --- !u!114 &7197133913839781593
 MonoBehaviour:
@@ -197,3 +198,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   facing: -1
+  HashCode: 0
+  previousMoveDirection: {x: 0, y: 0}
+  inPursuit: 0
+--- !u!61 &1394975855162717992
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3640374649173382018}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: -0.004086435, y: -0.09937531}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 0.48, y: 0.48}
+    newSize: {x: 0.48, y: 0.48}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 0.12652576, y: 0.26899016}
+  m_EdgeRadius: 0

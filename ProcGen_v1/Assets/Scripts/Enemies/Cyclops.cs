@@ -3,6 +3,7 @@ using Assets.Code.Global;
 using Assets.Code.Helper;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Assets.Scripts.Enemies
@@ -16,10 +17,11 @@ namespace Assets.Scripts.Enemies
 
         private GameObject player;
         private Rigidbody2D rb;
-        private BoxCollider2D boxCollider;
+        private BoxCollider2D feetCollider;
+        private BoxCollider2D triggerCollider;
         private Animator anim;
 
-        private bool delayed = true;
+        private bool delayed = false;
 
         //movement dependencies
         private AStarWorker worker;
@@ -27,17 +29,25 @@ namespace Assets.Scripts.Enemies
         private int currentTravelWaypoint;
         private bool travelling;
         private bool waitingForRoute;
+        private Vector2 startPosition; //Tells us that we have started on the first path. (gameObject has began moving)
 
         //movement
         private float waypointRadius = 0.0005f;
         private float moveSpeed = 15f;
         private Vector2 moveDirection;
+        private Vector2 feetPosition;
         public int facing = -1; //TODO: Convert to Enum
 
+        //stuck check
+        [SerializeField] private int HashCode; //Leaving in as this will be very helpful for logging when we handle the logging issue.
+        [SerializeField] private Vector2 previousMoveDirection;
+        private Vector2 previousStartLocation;
+        private int countInPlace;
+          
         //pursuit
         private float pursuitRadius = 1.5f;
         private Vector2? target = null;
-        private bool inPursuit;
+        [SerializeField] private bool inPursuit;
 
         //attack
         private float attackRadius = 0.32f; //2 spaces
@@ -45,34 +55,40 @@ namespace Assets.Scripts.Enemies
         private void Start()
         {
             player = GameObject.FindGameObjectWithTag(Tags.Player);
-            boxCollider = GetComponent<BoxCollider2D>();
+
+            var boxColliders = GetComponents<BoxCollider2D>();
+            feetCollider = boxColliders.First(x => !x.isTrigger);
+            triggerCollider = boxColliders.First(x => x.isTrigger);
+            
             rb = GetComponent<Rigidbody2D>();
             anim = GetComponent<Animator>();
+            
             base.Prime();
 
             OnboardWorker();
-            StartCoroutine(nameof(Delay));
+            //StartCoroutine(nameof(Delay)); --Turned off for now until we can get this working with CheckStuckByMoveDirection
+
+            HashCode = GetHashCode();
+            startPosition = transform.position;
         }
 
         private void Update()
         {
             if (travelling)
             {
-                //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
-                var normal = moveDirection.normalized;
-                if (Mathf.Round(normal.x) == 0)
+                if (currentTravelWaypoint > travelWaypoints.Count - 1)
                 {
-                    facing = (int)Mathf.Round(normal.y); //Anim matches the cardinality (up = 1, down = -1)
-                }
-                else
-                {
-                    facing = 2;
-                    spriteRenderer.flipX = normal.x < 0;
+                    //Debug.Log("Resetting");
+                    ResetTravelPlans();
+                    return;
                 }
 
-                anim.SetInteger("facing", facing);
+                CanMove();
+                AnimateMove();
                 return;
             }
+
+            //A*
             else if (!waitingForRoute && !delayed)
             {
                 RequestRoute();
@@ -96,55 +112,22 @@ namespace Assets.Scripts.Enemies
             {
                 Attack();
             }
-        }
 
-        private bool IsFacingPlayer(Vector2 playerDirection)
-        {
-            //May be better to use a raycast here since 'facing' isn't always reliable
-            //Medusa's AttackLanded code uses a raycast to detect the player. We could consider that here.
-            //On hit, we attack.
-
-            var normalized = playerDirection.normalized;
-            var normalRounded = new Vector2(Mathf.Round(normalized.x), Mathf.Round(normalized.y));
-            if (normalRounded.x == 0)
-            {
-                return facing == (int)normalRounded.y;
-            }
-
-            return spriteRenderer.flipX == normalRounded.x < 0;
         }
 
         private void FixedUpdate()
         {
+            //TOMORROW: We need to keep FoundObstacles (and any other Phsyics) inside of FixedUpdate so that we avoid collisions!
             if (!travelling || travelWaypoints.Count == 0) return;
+            if (FoundObstacles(feetPosition)) return;
 
-            if (currentTravelWaypoint > travelWaypoints.Count - 1)
-            {
-                //Debug.Log("Resetting");
-                ResetTravelPlans();
-                return;
-            }
-
-            //Move
-            var goal = travelWaypoints[currentTravelWaypoint];
-            moveDirection = goal - GetPositionOffset().ToVector2();
-            var onLastWaypoint = currentTravelWaypoint == travelWaypoints.Count - 1;
-       
             if (moveDirection.magnitude <= waypointRadius)
             {
-                //Debug.Log($"Waypoint {currentTravelWaypoint} reached");
-                if (onLastWaypoint)
-                {
-                    //We need to make sure we arrive at the waypoint
-                    //We add feetPositionOffset back here because in all of our move calculations we remove the offset. Adding it back here will allow for smooth movement.
-                    transform.position = new Vector2(travelWaypoints[currentTravelWaypoint].x, travelWaypoints[currentTravelWaypoint].y + feetPositionOffset); 
-                }
-             
                 currentTravelWaypoint++;
-                return;
             }
-         
             rb.MovePosition(rb.position + Time.deltaTime * moveSpeed * moveDirection);
+
+            previousStartLocation = transform.position;
         }
 
         /// <summary>
@@ -180,9 +163,88 @@ namespace Assets.Scripts.Enemies
 
         private void ResetTravelPlans()
         {
+            moveDirection = Vector2.zero;
             currentTravelWaypoint = 0;
             travelling = false;
             travelWaypoints.Clear();
+        }
+
+        private bool FoundObstacles(Vector2 feetPosition)
+        {
+            //Confirm move is safe (nothing else occupies space)
+            Debug.DrawRay(feetPosition, moveDirection, Color.green, 0.2f);
+            var hits = Physics2D.RaycastAll(feetPosition, moveDirection, moveDirection.magnitude);
+            if (hits.Any(x => !x.transform.gameObject.Equals(gameObject))) //We hit something
+            {
+                Debug.Log($"Found obstacle(s) with raycast; {string.Join(" ", hits.Where(x => !x.transform.gameObject.Equals(gameObject)).Select(x => x.transform.name))}"); //We hit something
+                ResetTravelPlans();
+                return true;
+            }
+            return false;
+        }
+
+        private void AnimateMove()
+        {
+            //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
+            var normal = moveDirection.normalized;
+            if (Mathf.Round(normal.x) == 0)
+            {
+                facing = (int)Mathf.Round(normal.y); //Anim matches the cardinality (up = 1, down = -1)
+            }
+            else
+            {
+                facing = 2;
+                spriteRenderer.flipX = normal.x < 0;
+            }
+
+            anim.SetInteger("facing", facing);
+        }
+
+        private void CanMove()
+        {
+            //Move
+            feetPosition = GetPositionOffset().ToVector2();
+            var goal = travelWaypoints[currentTravelWaypoint];
+            moveDirection = goal - feetPosition;
+
+            CheckStuckByMoveDirection();
+        }
+
+        /// <summary>
+        /// This is an attempt at fixing a collider issue with rigidbodies getting stuck to one another.
+        /// It appears that we cannot unstick them using Phsyics alone, so we directly alter the <see cref="Transform.position"/>
+        /// to the previous position of the transform.
+        /// More work is needed on this, by either fixing the colliders, or finding a more suitable approach
+        /// </summary>
+        /// <remarks>
+        /// Currently when reverting position, we do NOT raycast to ensure that it is safe. We will likely need to update this
+        /// Also there are known issues with this working in conjunction with delay
+        /// </remarks>
+        private void CheckStuckByMoveDirection()
+        {
+            if (!HasMoved()) return;
+
+            if (previousMoveDirection == moveDirection)
+            {
+                countInPlace++;
+                if (countInPlace >= 100)
+                {
+                    Debug.Log($"{GetHashCode()} resetting Travel plans. Current waypoint: {currentTravelWaypoint}");
+                    //Move back to the last position
+                    transform.position = previousStartLocation;
+                    countInPlace = 0;
+                }
+            }
+            else
+            {                
+                previousMoveDirection = moveDirection;
+                countInPlace = 0;
+            }
+        }
+
+        private bool HasMoved()
+        {
+            return previousStartLocation != startPosition;
         }
 
         private Vector3 GetPositionOffset()
@@ -197,33 +259,40 @@ namespace Assets.Scripts.Enemies
             ResetTravelPlans();
         }
 
+        private bool IsFacingPlayer(Vector2 playerDirection)
+        {
+            //May be better to use a raycast here since 'facing' isn't always reliable
+            //Medusa's AttackLanded code uses a raycast to detect the player. We could consider that here.
+            //On hit, we attack.
+
+            var normalized = playerDirection.normalized;
+            var normalRounded = new Vector2(Mathf.Round(normalized.x), Mathf.Round(normalized.y));
+            if (normalRounded.x == 0)
+            {
+                return facing == (int)normalRounded.y;
+            }
+
+            return spriteRenderer.flipX == normalRounded.x < 0;
+        }
+
         private void Attack()
         {
             //anim
             //swing, batter batter
             Debug.Log("Attacking player");
         }
+
+        private void OnDestroy()
+        {
+            worker.Dispose();
+        }
+
         #region Next Steps
-
-        //NOTE:
-        //ATM we only consider any space not occupied by an enemy as an empty tile when getting our list from BoardManager
-        //This is untrue for moving enemies, we will want to change this in the future
-
-
-        //****GARBAGE NEXT GO AROUND
-        //First Pass: (No walls, No enemies) -All paths are equal in cost
-        //We choose 3 empty tiles at random to use as waypoints for a*. This will be our path.
-        //If we get within attack range of player, we will pursue (Player.transform.position becomes our new goal)
-        //If we get close enough to player we will attack -Debug.Log statement for now
-        //If player gets out of attack range, we will jump back onto our path (making our closest waypoint our new goal)
-        //****
-
-        //**There are some issues with this approach. Namely, the A* algorithm is designed to calculate a path in one fell swoop.
-        //Because it tracks open and closed, it allows you to bounce around in an inconsistent manner.
-        //So we need to use it to GENERATE our waypoints instead.
 
         //Another idea, we use A* to calculate a PATH, each node (tile) will be a waypoint on that path.
         //Then we traverse the path. If we happen to run into an obstruction, we call A* again and hope for a better path.
+
+        //Have not yet implemented:
         //We can throw the obstruction tile (The waypoint we failed to make it to) in the closed list so that our path works around the blocker we just encountered.
 
         #endregion

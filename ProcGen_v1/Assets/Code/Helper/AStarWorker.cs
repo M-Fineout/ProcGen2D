@@ -104,6 +104,15 @@ namespace Assets.Code.Helper
             startNode = new AStarNode(new Vector2((float)Math.Round(feetPos.x, 2), (float)Math.Round(feetPos.y, 2)), 0, 0, 0, null);
             Debug.Log($"Starting at node {startNode.location.x}, {startNode.location.y}");
 
+            //This appears to happen when we need to recalculate a route unexpectedly.
+            //We could allow the client to pass in the desired start position and avoid some of this extra work?
+            //For example, the client could pass in the last waypoint that it passed (As we know that is a valid point)
+            if (!availableSpaces.Contains(startNode.location))
+            {
+                startNode.location = NormalizeToBoard(startNode.location);
+                Debug.Log($"overriding startNode to be: {startNode.location.x}, {startNode.location.y} after normalization");
+            }
+
             //Debug.Log(goal.HasValue ? goal.Value : "");
             var goalLocation = goal.HasValue ? NormalizeToBoard(goal.Value) : waypoints[currentWaypoint];
             goalNode = new AStarNode(goalLocation, 0, 0, 0, null);

@@ -291,13 +291,30 @@ public class BoardManager : MonoBehaviour
 
         if (enemy == cyclops)
         {
-            //AddToBoard(16, 19, enemy);
+            AddToBoard(16, 19, enemy);
             AddToBoard(2, 17, enemy);
-            //AddToBoard(5, 12, enemy);
-            //AddToBoard(5, 11, enemy);
-            //AddToBoard(4, 14, enemy);
-            //AddToBoard(3, 19, enemy);
-            //AddToBoard(2, 11, enemy);
+            AddToBoard(5, 12, enemy);
+            AddToBoard(5, 11, enemy);
+            AddToBoard(4, 14, enemy);
+            AddToBoard(3, 19, enemy);
+            AddToBoard(2, 11, enemy);
+
+            AddToBoard(16, 20, enemy);
+            AddToBoard(3, 18, enemy);
+            AddToBoard(6, 12, enemy);
+            AddToBoard(6, 11, enemy);
+            AddToBoard(2, 15, enemy);
+            AddToBoard(1, 18, enemy);
+            AddToBoard(9, 12, enemy);
+
+
+            //AddToBoard(16, 20, enemy);
+            //AddToBoard(3, 20, enemy);
+            //AddToBoard(6, 14, enemy);
+            //AddToBoard(6, 16, enemy);
+            //AddToBoard(4, 15, enemy);
+            //AddToBoard(9, 2, enemy);
+            //AddToBoard(11, 12, enemy);
         }
     }
 
