@@ -42,6 +42,8 @@ public class BoardManager : MonoBehaviour
     public GameObject wizard;
     public GameObject cyclops;
     public GameObject medusa;
+    public GameObject jelly;
+    public GameObject beholder;
 
     private int boardWidth = 24;
     private int boardLength = 24;
@@ -60,7 +62,7 @@ public class BoardManager : MonoBehaviour
     {
         //Debug.Log($"BoardManager created {this.GetHashCode()}");
         RegisterEvents();
-        enemies = new List<GameObject> { wizard, cyclops, medusa };
+        enemies = new List<GameObject> { wizard, cyclops, medusa, jelly, beholder };
 
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
     }                       
@@ -104,7 +106,9 @@ public class BoardManager : MonoBehaviour
         //SetupSpecialTiles();
         //SetupEnemiesTesting(medusa);
         //SetupEnemiesTesting(wizard);
-        SetupEnemiesTesting(cyclops);
+        //SetupEnemiesTesting(cyclops);
+        SetupEnemiesTesting(jelly);
+        SetupEnemiesTesting(beholder);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
@@ -315,6 +319,17 @@ public class BoardManager : MonoBehaviour
             //AddToBoard(4, 15, enemy);
             //AddToBoard(9, 2, enemy);
             //AddToBoard(11, 12, enemy);
+        }
+
+        if (enemy == beholder)
+        {
+            AddToBoard(16, 19, enemy);
+            AddToBoard(2, 17, enemy);
+        }
+
+        if (enemy == jelly)
+        {
+            AddToBoard(5, 11, enemy);
         }
     }
 

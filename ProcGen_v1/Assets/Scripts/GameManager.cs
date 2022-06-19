@@ -27,6 +27,7 @@ public class GameManager : MonoBehaviour
 
             EventBus.instance.RegisterCallback(GameEvent.LevelCompleted, LevelComplete);
             EventBus.instance.RegisterCallback(GameEvent.HeartBeating, Initialize);
+            EventBus.instance.RegisterCallback(GameEvent.PlayerDefeated, PlayerKilled);
         }      
     }
 
@@ -62,8 +63,19 @@ public class GameManager : MonoBehaviour
         //We need to unregister our player and boardmanager from any events. Enemies should be unsubscribed at this point.
         //Or, we unsubscribe from everything here
 
-        //OR, we do a fell swoop of the EventBus in build another one. (This may be too heavy handed?)
+        //OR, we do a fell swoop of the EventBus in build another one. (This may be too heavy handed?)      
         SceneManager.LoadScene(0);
+    }
+
+    private void PlayerKilled(EventMessage message)
+    {
+        //Check lives
+        //Restart with same board?
+
+        //End game if lives are out
+        Debug.Log("Game Over!");
+        Time.timeScale = 0;
+        enabled = false;
     }
 
     ////this is called only once, and the parameter tell it to be called only after the scene was loaded

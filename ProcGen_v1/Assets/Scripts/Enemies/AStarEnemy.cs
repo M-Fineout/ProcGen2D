@@ -8,16 +8,16 @@ using UnityEngine;
 
 namespace Assets.Scripts.Enemies
 {
-    public class Cyclops : Enemy
+    public class AStarEnemy : Enemy
     {
         protected override int Health { get; set; } = 3;
 
         private const int pathLength = 6;
-        private const float feetPositionOffset = .16f; //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
+        private const float feetPositionOffset = 0; //6 for cyclops (and likely medusa) //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
 
-        private GameObject player;
-        private Rigidbody2D rb;
-        private BoxCollider2D feetCollider;
+        protected GameObject player;
+        protected Rigidbody2D rb;
+        protected BoxCollider2D feetCollider;
         private BoxCollider2D triggerCollider;
         private Animator anim;
 
@@ -33,7 +33,7 @@ namespace Assets.Scripts.Enemies
 
         //movement
         private float waypointRadius = 0.0005f;
-        private float moveSpeed = 15f;
+        protected virtual float moveSpeed { get; set; } = 15f;
         private Vector2 moveDirection;
         private Vector2 feetPosition;
         public int facing = -1; //TODO: Convert to Enum
@@ -47,9 +47,11 @@ namespace Assets.Scripts.Enemies
         //pursuit
         private float pursuitRadius = 1.5f;
         private Vector2? target = null;
-        [SerializeField] private bool inPursuit;
+        [SerializeField] protected bool inPursuit;
 
         //attack
+        public bool canAttack = true;
+        public bool isAttacking;
         private float attackRadius = 0.32f; //2 spaces
 
         private void Start()
@@ -74,6 +76,8 @@ namespace Assets.Scripts.Enemies
 
         private void Update()
         {
+            if (isAttacking) return;
+
             if (travelling)
             {
                 if (currentTravelWaypoint > travelWaypoints.Count - 1)
@@ -94,6 +98,8 @@ namespace Assets.Scripts.Enemies
                 RequestRoute();
             }
 
+            if (!canAttack) return; //Jelly testing
+
             //Pursuit
             var playerDirection = (player.transform.position - GetPositionOffset()).ToVector2();
             var distanceFromPlayer = playerDirection.magnitude;
@@ -112,13 +118,12 @@ namespace Assets.Scripts.Enemies
             {
                 Attack();
             }
-
         }
 
         private void FixedUpdate()
         {
             //TOMORROW: We need to keep FoundObstacles (and any other Phsyics) inside of FixedUpdate so that we avoid collisions!
-            if (!travelling || travelWaypoints.Count == 0) return;
+            if (isAttacking || !travelling || travelWaypoints.Count == 0) return;
             if (FoundObstacles(feetPosition)) return;
 
             if (moveDirection.magnitude <= waypointRadius)
@@ -161,7 +166,7 @@ namespace Assets.Scripts.Enemies
             waitingForRoute = false;
         }
 
-        private void ResetTravelPlans()
+        protected void ResetTravelPlans()
         {
             moveDirection = Vector2.zero;
             currentTravelWaypoint = 0;
@@ -172,7 +177,7 @@ namespace Assets.Scripts.Enemies
         private bool FoundObstacles(Vector2 feetPosition)
         {
             //Confirm move is safe (nothing else occupies space)
-            Debug.DrawRay(feetPosition, moveDirection, Color.green, 0.2f);
+            //Debug.DrawRay(feetPosition, moveDirection, Color.green, 0.2f);
             var hits = Physics2D.RaycastAll(feetPosition, moveDirection, moveDirection.magnitude);
             if (hits.Any(x => !x.transform.gameObject.Equals(gameObject))) //We hit something
             {
@@ -275,11 +280,19 @@ namespace Assets.Scripts.Enemies
             return spriteRenderer.flipX == normalRounded.x < 0;
         }
 
-        private void Attack()
+        protected virtual void Attack()
         {
+            isAttacking = true;           
+            anim.SetBool("isAttacking", isAttacking);
             //anim
             //swing, batter batter
             Debug.Log("Attacking player");
+        }
+
+        public virtual void AttackFinished()
+        {
+            isAttacking = false;
+            anim.SetBool("isAttacking", isAttacking);
         }
 
         private void OnDestroy()

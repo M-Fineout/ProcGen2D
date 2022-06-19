@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: c56856c98efc1cb489bd2743f8e74e60
+guid: a3eb36815269bee4ba9d2ace9632a292
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -116,211 +116,274 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Jelly_Centered_0
+      name: Jelly_Anim_TopDown_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
+        y: 176
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: fb1513c39a895c54f8e0e799ee403957
-      internalID: 602284503
+      spriteID: 34358dabb0afc4443bc9974e1cae8fec
+      internalID: -293332670
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Jelly_Centered_1
+      name: Jelly_Anim_TopDown_1
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 144
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0a6ec95dfae17a8409ec369f7050079e
+      internalID: 2055781040
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_2
       rect:
         serializedVersion: 2
         x: 32
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
+        y: 144
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a99fc39e51a4f4241bdd79a711598018
-      internalID: 1317355571
+      spriteID: eae5b57e219f03d49814a615003fe3ff
+      internalID: 1313104601
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Jelly_Centered_2
+      name: Jelly_Anim_TopDown_3
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 144
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dd5ecaa2deeca9346b94f1552626e55b
+      internalID: 2048962344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_4
       rect:
         serializedVersion: 2
         x: 64
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 58153354fd3dd764b8d072df3ca784f7
-      internalID: -1778818966
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_3
-      rect:
-        serializedVersion: 2
-        x: 96
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 8a1a437bffe8b63479608966181922db
-      internalID: -312826387
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_4
-      rect:
-        serializedVersion: 2
-        x: 128
-        y: 383
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 92e0539302c625142abea127b97d7b89
-      internalID: -1823109908
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_5
-      rect:
-        serializedVersion: 2
-        x: 160
-        y: 383
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 308863ef486777b4e8ccb6868c724781
-      internalID: -645264259
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_6
-      rect:
-        serializedVersion: 2
-        x: 192
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 60d6a36760ce1f6449d6490dcf3d535b
-      internalID: 1281025776
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_7
-      rect:
-        serializedVersion: 2
-        x: 224
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: acd7b55f3be07b147b7439e86221de66
-      internalID: 1702522788
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_8
-      rect:
-        serializedVersion: 2
-        x: 256
-        y: 384
-        width: 32
-        height: 48
-      alignment: 9
-      pivot: {x: 0.5, y: 0.25}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: b4601818d8855cc46bf6e1e7774692ea
-      internalID: -2137989109
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Jelly_Centered_9
-      rect:
-        serializedVersion: 2
-        x: 152
-        y: 347
-        width: 50
-        height: 8
+        y: 144
+        width: 16
+        height: 16
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 0386b378ded07cc4e8ebcc32046c042b
-      internalID: 2038337867
+      spriteID: 45f509c8900937c4fb4b8f0750693ae1
+      internalID: 1703358939
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_5
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 128
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 99458c635a64b164b905115fb1a5d6a8
+      internalID: -1105290972
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_6
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 128
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9640632c7199ccd4ab547ac40aa93744
+      internalID: -827528128
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_7
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 128
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 39184a36d3b0a7242af5409349a94406
+      internalID: -748073740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_8
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 128
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2f0be994c088d5046a91e7905d78022b
+      internalID: -1954227235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_9
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3c9e9e1fe27b5184e8031c17029c2af4
+      internalID: 593906655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_10
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c8ceb8eb19e2b02478d7eaf658855a2b
+      internalID: 781714387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_11
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a4b320935f47fb843a508cceeed08f56
+      internalID: 1747276582
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jelly_Anim_TopDown_12
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e66c2a10ed1ecd7479ed597f436227ec
+      internalID: -2030033529
       vertices: []
       indices: 
       edges: []
@@ -336,16 +399,19 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Jelly_Centered_5: -645264259
-      Jelly_Centered_4: -1823109908
-      Jelly_Centered_9: 2038337867
-      Jelly_Centered_1: 1317355571
-      Jelly_Centered_6: 1281025776
-      Jelly_Centered_8: -2137989109
-      Jelly_Centered_0: 602284503
-      Jelly_Centered_2: -1778818966
-      Jelly_Centered_7: 1702522788
-      Jelly_Centered_3: -312826387
+      Jelly_Anim_TopDown_6: -827528128
+      Jelly_Anim_TopDown_9: 593906655
+      Jelly_Anim_TopDown_4: 1703358939
+      Jelly_Anim_TopDown_7: -748073740
+      Jelly_Anim_TopDown_5: -1105290972
+      Jelly_Anim_TopDown_2: 1313104601
+      Jelly_Anim_TopDown_11: 1747276582
+      Jelly_Anim_TopDown_1: 2055781040
+      Jelly_Anim_TopDown_12: -2030033529
+      Jelly_Anim_TopDown_8: -1954227235
+      Jelly_Anim_TopDown_3: 2048962344
+      Jelly_Anim_TopDown_10: 781714387
+      Jelly_Anim_TopDown_0: -293332670
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

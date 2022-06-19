@@ -19,6 +19,7 @@
         PlayerHit,
         PlayerAttack,
         PlayerAttackEnded,
+        PlayerDefeated,
 
         EnemyDefeated
     }

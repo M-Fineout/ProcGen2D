@@ -8,6 +8,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    private float health = 3f;
+
     private const float involuntaryCollisionOffset = 0.3f; //Roughly two tiles (this may need to be adjusted)
     private const float feetPositionOffset = .14f; //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
    
@@ -191,7 +193,22 @@ public class PlayerController : MonoBehaviour
         }
         else if (collision.CompareTag(Tags.Enemy))
         {
-            Debug.Log("Collided with enemy!");
+            var enemy = collision.GetComponent<Enemy>();
+            switch (enemy)
+            {
+                case Jelly jelly:
+                    {
+                        if (jelly.isAttacking)
+                        {
+                            spriteRenderer.enabled = false;
+                            canMove = false;
+                            boxCollider.enabled = false;
+                        }
+                   
+                    }
+                    break;
+            }
+            Debug.Log($"Collided with enemy: {collision.gameObject.name}");
         }
     }
 
@@ -210,8 +227,10 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private IEnumerator Damaged()
+    private IEnumerator Damaged(int damage = 0)
     {
+        TakeDamage(damage);
+
         var color = spriteRenderer.color;
         spriteRenderer.color = new Color(0.8018868f, 0.301258f, 0.2458615f, 1);
 
@@ -280,9 +299,21 @@ public class PlayerController : MonoBehaviour
     private void PlayerHit(EventMessage message)
     {
         //if !(message is PlayerHitMessage) return
-
+        var damage = (int)message.Payload;
+        StartCoroutine(nameof(Damaged), damage);
         //For now, only medusa attacks use this so just handle that
-        StartCoroutine(nameof(Stoned));
+        //StartCoroutine(nameof(Stoned));
+    }
+
+    private void TakeDamage(int damage)
+    {
+        Debug.Log($"Player took {damage} damage");
+        health -= damage;
+        if (health <= 0)
+        {
+            Debug.Log("Player defeated");
+            EventBus.instance.TriggerEvent(GameEvent.PlayerDefeated, new EventMessage());
+        }
     }
 
     private void OnDestroy()
