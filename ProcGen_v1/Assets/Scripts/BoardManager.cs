@@ -108,7 +108,7 @@ public class BoardManager : MonoBehaviour
         //SetupEnemiesTesting(wizard);
         //SetupEnemiesTesting(cyclops);
         SetupEnemiesTesting(jelly);
-        SetupEnemiesTesting(beholder);
+        //SetupEnemiesTesting(beholder);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
@@ -324,7 +324,7 @@ public class BoardManager : MonoBehaviour
         if (enemy == beholder)
         {
             AddToBoard(16, 19, enemy);
-            AddToBoard(2, 17, enemy);
+            //AddToBoard(2, 17, enemy);
         }
 
         if (enemy == jelly)

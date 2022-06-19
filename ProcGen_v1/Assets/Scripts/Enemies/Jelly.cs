@@ -18,7 +18,10 @@ namespace Assets.Scripts.Enemies
         protected override void Attack()
         {
             feetCollider.enabled = false;
-            base.Attack();
+            anim.SetBool("isAttacking", true);
+            //anim
+            //swing, batter batter
+            Debug.Log("Attacking player");
             //StartCoroutine(nameof(AttackRoutine));
         }
 
@@ -30,6 +33,7 @@ namespace Assets.Scripts.Enemies
 
         public void MoveOverAttackPostion()
         {
+            isAttacking = true;
             var travelVector = attackDistance * GetFacingVector();
             var newPos = new Vector2(transform.position.x + travelVector.x, transform.position.y + travelVector.y);
             transform.position = newPos;

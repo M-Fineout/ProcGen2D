@@ -12,7 +12,8 @@ public class PlayerController : MonoBehaviour
 
     private const float involuntaryCollisionOffset = 0.3f; //Roughly two tiles (this may need to be adjusted)
     private const float feetPositionOffset = .14f; //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
-   
+
+    private Vector2 lastPos;
     public float moveSpeed = 1f;
     public float collisionOffset = 0.02f;
     public ContactFilter2D movementFilter;
@@ -31,6 +32,8 @@ public class PlayerController : MonoBehaviour
    
     List<RaycastHit2D> castCollisions = new List<RaycastHit2D>();
 
+    bool handlingCollision;
+    bool takingDamage;
     bool isConfused;
     bool isStoned;
 
@@ -131,7 +134,8 @@ public class PlayerController : MonoBehaviour
         var count = rb.Cast(direction, movementFilter, castCollisions, moveSpeed * Time.fixedDeltaTime + collisionOffset);
         if (count == 0)
         {
-            rb.MovePosition(rb.position + Time.deltaTime * moveSpeed * direction);           
+            rb.MovePosition(rb.position + Time.deltaTime * moveSpeed * direction);
+            lastPos = rb.position;
             return true;
         }
         return false;
@@ -150,16 +154,12 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        //Only handling collisions when not attacking is somewhat flawed. We are essentially immune to any contact damage while attacking now :/
+        if (!collision.isTrigger || handlingCollision || isAttacking) return;
+        handlingCollision = true;
         //TODO: Move player throwback code from spike trigger into damaged.
         //We need to use triggers to prevent the player from being able to move onto an enemy space
         //We can leverage the damaged coroutine to have the player pushed back, so that they can never get onto or under an enemy
-
-        //Debug.Log($"Entered Trigger with {collision.transform.name}");
-        //if spikes, we can calculate the position of the spikes and apply a force in the opposite direction
-        //if we are above the spikes, then push us upwards
-        //if left, push us left
-        //if right, right
-        //if below, down
         if (collision.CompareTag("Spikes"))
         {
             //take damage
@@ -208,8 +208,14 @@ public class PlayerController : MonoBehaviour
                     }
                     break;
             }
+            
             Debug.Log($"Collided with enemy: {collision.gameObject.name}");
+
+            //if our enemy is not attacking, take damage and push player back
+            StartCoroutine(nameof(Damaged), 1); //conver to variable ContactDamage
+            transform.position = lastPos; //We need a better force applied here to prevent collider sticking 
         }
+        handlingCollision = false;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -229,6 +235,8 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Damaged(int damage = 0)
     {
+        if (takingDamage) yield return null;
+        takingDamage = true;
         TakeDamage(damage);
 
         var color = spriteRenderer.color;
@@ -237,6 +245,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(0.25f);
 
         spriteRenderer.color = color;
+        takingDamage = false;    
     }
 
     private IEnumerator Melt()

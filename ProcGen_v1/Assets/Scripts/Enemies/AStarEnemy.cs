@@ -19,7 +19,7 @@ namespace Assets.Scripts.Enemies
         protected Rigidbody2D rb;
         protected BoxCollider2D feetCollider;
         private BoxCollider2D triggerCollider;
-        private Animator anim;
+        protected Animator anim;
 
         private bool delayed = false;
 
@@ -31,6 +31,7 @@ namespace Assets.Scripts.Enemies
         private bool waitingForRoute;
         private Vector2 startPosition; //Tells us that we have started on the first path. (gameObject has began moving)
 
+        private State state;
         //movement
         private float waypointRadius = 0.0005f;
         protected virtual float moveSpeed { get; set; } = 15f;
@@ -52,7 +53,7 @@ namespace Assets.Scripts.Enemies
         //attack
         public bool canAttack = true;
         public bool isAttacking;
-        private float attackRadius = 0.32f; //2 spaces
+        protected float attackRadius { get; set; } = 0.20f; //1 space //TODO: Player's transform is still not safe to use here
 
         private void Start()
         {
@@ -78,6 +79,7 @@ namespace Assets.Scripts.Enemies
         {
             if (isAttacking) return;
 
+            //State: Patrol
             if (travelling)
             {
                 if (currentTravelWaypoint > travelWaypoints.Count - 1)
@@ -89,8 +91,11 @@ namespace Assets.Scripts.Enemies
 
                 CanMove();
                 AnimateMove();
-                return;
+                //return;
             }
+
+            //Non-State, needed by states pursuit and between travel plans (Whenever Reset Travel Plans = true):
+            //This allows us to continuously track the player when in pursuit
 
             //A*
             else if (!waitingForRoute && !delayed)
@@ -101,7 +106,10 @@ namespace Assets.Scripts.Enemies
             if (!canAttack) return; //Jelly testing
 
             //Pursuit
-            var playerDirection = (player.transform.position - GetPositionOffset()).ToVector2();
+            //NOTE: Here we are accounting for the player transform not being directly center of the sprite.
+            var playerDirection = new Vector2(player.transform.position.x, player.transform.position.y - 0.12f) - GetPositionOffset().ToVector2();
+            Debug.DrawRay(feetPosition, playerDirection, Color.green, 0.2f);
+            Debug.Log($"Player Direction distance: {playerDirection.magnitude}");
             var distanceFromPlayer = playerDirection.magnitude;
             if (!inPursuit && distanceFromPlayer <= pursuitRadius)
             {
@@ -114,7 +122,7 @@ namespace Assets.Scripts.Enemies
             }
 
             //Attack
-            if (distanceFromPlayer < attackRadius && IsFacingPlayer(playerDirection))
+            if (distanceFromPlayer < attackRadius && IsFacingPlayerRaycast())
             {
                 Attack();
             }
@@ -157,7 +165,7 @@ namespace Assets.Scripts.Enemies
 
             if (inPursuit)
             {
-                target = player.transform.position;
+                target = new Vector2(player.transform.position.x, player.transform.position.y - 0.12f); //Once again, we are normalizing player pos here!
             }
             travelWaypoints = worker.CalculateRoute(target);
 
@@ -179,7 +187,7 @@ namespace Assets.Scripts.Enemies
             //Confirm move is safe (nothing else occupies space)
             //Debug.DrawRay(feetPosition, moveDirection, Color.green, 0.2f);
             var hits = Physics2D.RaycastAll(feetPosition, moveDirection, moveDirection.magnitude);
-            if (hits.Any(x => !x.transform.gameObject.Equals(gameObject))) //We hit something
+            if (hits.Any(x => !x.transform.gameObject.Equals(gameObject))) //We hit something //TODO: If we hit player here, move straight to attack
             {
                 Debug.Log($"Found obstacle(s) with raycast; {string.Join(" ", hits.Where(x => !x.transform.gameObject.Equals(gameObject)).Select(x => x.transform.name))}"); //We hit something
                 ResetTravelPlans();
@@ -280,6 +288,17 @@ namespace Assets.Scripts.Enemies
             return spriteRenderer.flipX == normalRounded.x < 0;
         }
 
+        private bool IsFacingPlayerRaycast()
+        {
+            Debug.DrawRay(feetPosition, GetFacingVector(), Color.red, 0.2f);
+            var hits = Physics2D.RaycastAll(feetPosition, GetFacingVector(), attackRadius);
+            if (hits.Any(x => x.transform.gameObject.Equals(player))) //We hit something
+            {
+                return true;               
+            }
+            return false;
+        }
+
         protected virtual void Attack()
         {
             isAttacking = true;           
@@ -300,14 +319,38 @@ namespace Assets.Scripts.Enemies
             worker.Dispose();
         }
 
-        #region Next Steps
+        private Vector2 GetFacingVector()
+        {
+            switch (facing)
+            {
+                case 1:
+                    return Vector2.up;
+                case -1:
+                    return Vector2.down;
+                case 2:
+                    return spriteRenderer.flipX ? Vector2.left : Vector2.right;
+                default:
+                    {
+                        Debug.Log($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
+                        return Vector2.zero;
+                    }
+            }
+        }
+            #region Next Steps
 
-        //Another idea, we use A* to calculate a PATH, each node (tile) will be a waypoint on that path.
-        //Then we traverse the path. If we happen to run into an obstruction, we call A* again and hope for a better path.
+            //Another idea, we use A* to calculate a PATH, each node (tile) will be a waypoint on that path.
+            //Then we traverse the path. If we happen to run into an obstruction, we call A* again and hope for a better path.
 
-        //Have not yet implemented:
-        //We can throw the obstruction tile (The waypoint we failed to make it to) in the closed list so that our path works around the blocker we just encountered.
+            //Have not yet implemented:
+            //We can throw the obstruction tile (The waypoint we failed to make it to) in the closed list so that our path works around the blocker we just encountered.
 
-        #endregion
+            #endregion
+        }
+
+    internal enum State
+    {
+        Patrol,
+        Pursuit,
+        Attack
     }
 }
