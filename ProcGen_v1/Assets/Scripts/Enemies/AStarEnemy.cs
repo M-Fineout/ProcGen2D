@@ -15,6 +15,7 @@ namespace Assets.Scripts.Enemies
         private const int pathLength = 6;
         private const float feetPositionOffset = 0; //6 for cyclops (and likely medusa) //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
 
+        //We should move these to the enemy class
         protected GameObject player;
         protected Rigidbody2D rb;
         protected BoxCollider2D feetCollider;
@@ -27,11 +28,12 @@ namespace Assets.Scripts.Enemies
         private AStarWorker worker;
         private List<Vector2> travelWaypoints = new();
         private int currentTravelWaypoint;
-        private bool travelling;
-        private bool waitingForRoute;
+        private bool waitingForRoute = true;
         private Vector2 startPosition; //Tells us that we have started on the first path. (gameObject has began moving)
 
         private State state;
+        private bool calculatingRoute;
+
         //movement
         private float waypointRadius = 0.0005f;
         protected virtual float moveSpeed { get; set; } = 15f;
@@ -48,7 +50,6 @@ namespace Assets.Scripts.Enemies
         //pursuit
         private float pursuitRadius = 1.5f;
         private Vector2? target = null;
-        [SerializeField] protected bool inPursuit;
 
         //attack
         public bool canAttack = true;
@@ -77,61 +78,76 @@ namespace Assets.Scripts.Enemies
 
         private void Update()
         {
-            if (isAttacking) return;
-
-            //State: Patrol
-            if (travelling)
-            {
-                if (currentTravelWaypoint > travelWaypoints.Count - 1)
-                {
-                    //Debug.Log("Resetting");
-                    ResetTravelPlans();
-                    return;
-                }
-
-                CanMove();
-                AnimateMove();
-                //return;
-            }
-
-            //Non-State, needed by states pursuit and between travel plans (Whenever Reset Travel Plans = true):
-            //This allows us to continuously track the player when in pursuit
+            if (isAttacking || calculatingRoute) return;
 
             //A*
-            else if (!waitingForRoute && !delayed)
+            if (waitingForRoute && !delayed)
             {
                 RequestRoute();
             }
 
-            if (!canAttack) return; //Jelly testing
+            switch (state)
+            {
+                case State.Patrol:
+                    Patrol();
+                    break;
+                case State.Pursue:
+                    Pursue();
+                    break;
+                case State.Attack:
+                    Attack();
+                    break;
+            }           
+        }
 
-            //Pursuit
-            //NOTE: Here we are accounting for the player transform not being directly center of the sprite.
-            var playerDirection = new Vector2(player.transform.position.x, player.transform.position.y - 0.12f) - GetPositionOffset().ToVector2();
-            Debug.DrawRay(feetPosition, playerDirection, Color.green, 0.2f);
-            Debug.Log($"Player Direction distance: {playerDirection.magnitude}");
-            var distanceFromPlayer = playerDirection.magnitude;
-            if (!inPursuit && distanceFromPlayer <= pursuitRadius)
+        private void Patrol()
+        {
+            Travel();
+            if (!canAttack) return;
+            var distanceFromPlayer = GetPlayerDistance();
+            if (distanceFromPlayer <= pursuitRadius)
             {
                 StartPursuit();
             }
-            if (inPursuit && distanceFromPlayer > pursuitRadius)
+        }
+
+        private void Travel()
+        {
+            if (currentTravelWaypoint > travelWaypoints.Count - 1)
             {
-                Debug.Log($"Stopping pursuit. {distanceFromPlayer} away from player");
-                inPursuit = false;
+                ResetTravelPlans();
+                return;
             }
 
+            CanMove();
+            AnimateMove();
+        }
+
+        private void Pursue()
+        {
+            Travel();
+            var distanceFromPlayer = GetPlayerDistance();
+            if (distanceFromPlayer > pursuitRadius)
+            {
+                Debug.Log($"Stopping pursuit. {distanceFromPlayer} away from player");
+                state = State.Patrol;
+            }
+            Debug.Log($"Player distance: {distanceFromPlayer}");
             //Attack
             if (distanceFromPlayer < attackRadius && IsFacingPlayerRaycast())
             {
-                Attack();
+                state = State.Attack;
+                //Attack();
             }
+
         }
 
         private void FixedUpdate()
         {
             //TOMORROW: We need to keep FoundObstacles (and any other Phsyics) inside of FixedUpdate so that we avoid collisions!
-            if (isAttacking || !travelling || travelWaypoints.Count == 0) return;
+            //Edit: NOT TRUE. We only need physics MOVEMENT inside of fixed update (supposedly)
+            if (state == State.Attack || calculatingRoute) return;
+
             if (FoundObstacles(feetPosition)) return;
 
             if (moveDirection.magnitude <= waypointRadius)
@@ -160,26 +176,28 @@ namespace Assets.Scripts.Enemies
 
         private void RequestRoute()
         {
-            waitingForRoute = true;
+            calculatingRoute = true;
             travelWaypoints.Clear();
 
-            if (inPursuit)
+            if (state == State.Pursue)
             {
                 target = new Vector2(player.transform.position.x, player.transform.position.y - 0.12f); //Once again, we are normalizing player pos here!
             }
+
             travelWaypoints = worker.CalculateRoute(target);
 
             target = null;
-            travelling = true;
+
             waitingForRoute = false;
+            calculatingRoute = false;
         }
 
         protected void ResetTravelPlans()
         {
             moveDirection = Vector2.zero;
             currentTravelWaypoint = 0;
-            travelling = false;
             travelWaypoints.Clear();
+            waitingForRoute = true;
         }
 
         private bool FoundObstacles(Vector2 feetPosition)
@@ -255,6 +273,11 @@ namespace Assets.Scripts.Enemies
             }
         }
 
+        /// <summary>
+        /// This is a PH for something we need to address when more than 14 or so enemies are on a lvl. AStar takes quite a while to calculate
+        /// And thus, <see cref="CheckStuckByMoveDirection"/> starts triggering, even though we don't want it to.
+        /// </summary>
+        /// <returns></returns>
         private bool HasMoved()
         {
             return previousStartLocation != startPosition;
@@ -268,8 +291,16 @@ namespace Assets.Scripts.Enemies
         private void StartPursuit()
         {
             Debug.Log("Pursuing player!");
-            inPursuit = true;
+            state = State.Pursue;
             ResetTravelPlans();
+        }
+
+        private float GetPlayerDistance()
+        {
+            var playerDirection = new Vector2(player.transform.position.x, player.transform.position.y - 0.12f) - GetPositionOffset().ToVector2();
+            Debug.DrawRay(feetPosition, playerDirection, Color.green, 0.2f);
+            var distanceFromPlayer = playerDirection.magnitude;
+            return distanceFromPlayer;
         }
 
         private bool IsFacingPlayer(Vector2 playerDirection)
@@ -303,8 +334,6 @@ namespace Assets.Scripts.Enemies
         {
             isAttacking = true;           
             anim.SetBool("isAttacking", isAttacking);
-            //anim
-            //swing, batter batter
             Debug.Log("Attacking player");
         }
 
@@ -312,6 +341,7 @@ namespace Assets.Scripts.Enemies
         {
             isAttacking = false;
             anim.SetBool("isAttacking", isAttacking);
+            state = State.Patrol;
         }
 
         private void OnDestroy()
@@ -336,6 +366,7 @@ namespace Assets.Scripts.Enemies
                     }
             }
         }
+
             #region Next Steps
 
             //Another idea, we use A* to calculate a PATH, each node (tile) will be a waypoint on that path.
@@ -350,7 +381,7 @@ namespace Assets.Scripts.Enemies
     internal enum State
     {
         Patrol,
-        Pursuit,
+        Pursue,
         Attack
     }
 }

@@ -57,12 +57,6 @@ namespace Assets.Scripts.Enemies
             }
         }
 
-        //TODO:
-        //Once player is engulfed, trigger event that jelly subscribes to.
-        //This tells us we have a capture, and to start our cooldown so that we can patrol once more.
-        //Need FSM so that we can run states
-
-
         private void OnTriggerEnter2D(Collider2D collision)
         {
             if (isAttacking) //We have engulfed player
@@ -78,7 +72,6 @@ namespace Assets.Scripts.Enemies
         private IEnumerator Cooldown()
         {
             canAttack = false;
-            inPursuit = false;
             ResetTravelPlans();
             yield return new WaitForSeconds(3);
             canAttack = true;
