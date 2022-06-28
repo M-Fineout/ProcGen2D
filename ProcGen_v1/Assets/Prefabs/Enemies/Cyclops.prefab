@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 7197133913839781593}
   - component: {fileID: 1248305065083477220}
   - component: {fileID: 1394975855162717992}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cyclops
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -120,7 +120,7 @@ Rigidbody2D:
   m_GameObject: {fileID: 3640374649173382018}
   m_BodyType: 1
   m_Simulated: 1
-  m_UseFullKinematicContacts: 0
+  m_UseFullKinematicContacts: 1
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0
@@ -200,7 +200,8 @@ MonoBehaviour:
   facing: -1
   HashCode: 0
   previousMoveDirection: {x: 0, y: 0}
-  inPursuit: 0
+  canAttack: 1
+  isAttacking: 0
 --- !u!61 &1394975855162717992
 BoxCollider2D:
   m_ObjectHideFlags: 0

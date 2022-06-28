@@ -20,6 +20,7 @@
         PlayerAttack,
         PlayerAttackEnded,
         PlayerDefeated,
+        PlayerDropped,
 
         EnemyDefeated
     }

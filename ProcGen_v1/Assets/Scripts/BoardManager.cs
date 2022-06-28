@@ -44,6 +44,7 @@ public class BoardManager : MonoBehaviour
     public GameObject medusa;
     public GameObject jelly;
     public GameObject beholder;
+    public GameObject trash;
 
     private int boardWidth = 24;
     private int boardLength = 24;
@@ -107,8 +108,9 @@ public class BoardManager : MonoBehaviour
         //SetupEnemiesTesting(medusa);
         //SetupEnemiesTesting(wizard);
         //SetupEnemiesTesting(cyclops);
-        SetupEnemiesTesting(jelly);
+        //SetupEnemiesTesting(jelly);
         //SetupEnemiesTesting(beholder);
+        SetupEnemiesTesting(trash);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
@@ -120,6 +122,8 @@ public class BoardManager : MonoBehaviour
         //Add cyclops static location to blueprints for testing
         //Blueprints.Add(new Vector2(2.56f, 3.04f), 0);
         //Blueprints.Add(new Vector2(0.32f, 2.72f), 0);
+
+        Physics.bounceThreshold = .0001f;
     }
 
     private bool IsWall(GameObject gameObject)
@@ -220,7 +224,7 @@ public class BoardManager : MonoBehaviour
 
     private void SetupPlayer()
     {
-        AddToBoard(1, 2, player);
+        AddToBoard(1, 1, player);
     }
 
     private void SetupSpecialTiles()
@@ -324,12 +328,43 @@ public class BoardManager : MonoBehaviour
         if (enemy == beholder)
         {
             AddToBoard(16, 19, enemy);
+            //AddToBoard(6, 11, enemy);
+            //AddToBoard(2, 15, enemy);
+            AddToBoard(1, 17, enemy);
+            //AddToBoard(9, 12, enemy);
+            //AddToBoard(8, 2, enemy);
+            //AddToBoard(10, 6, enemy);
+            //AddToBoard(3, 6, enemy);
+            //AddToBoard(3, 7, enemy);
             //AddToBoard(2, 17, enemy);
+
+            //AddToBoard(16, 20, enemy);
+            //AddToBoard(3, 18, enemy);
+            //AddToBoard(6, 12, enemy);
+            //AddToBoard(6, 2, enemy);
+            //AddToBoard(2, 19, enemy);
+            //AddToBoard(1, 15, enemy);
+            //AddToBoard(9, 15, enemy);
+
+            //AddToBoard(15, 21, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(7, 15, enemy);
         }
 
         if (enemy == jelly)
         {
             AddToBoard(5, 11, enemy);
+            AddToBoard(7, 15, enemy);
+        }
+
+        if (enemy == trash)
+        {
+            AddToBoard(5, 11, enemy);
+            AddToBoard(7, 15, enemy);
         }
     }
 

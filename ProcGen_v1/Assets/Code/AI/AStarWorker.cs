@@ -50,7 +50,10 @@ namespace Assets.Code.Helper
         public List<Vector2> CalculateRoute(Vector2? goal = null)
         {
             travelWaypoints.Clear();
-            StartNextPath(goal);
+            if (!StartNextPath(goal))
+            {
+                return travelWaypoints; //Return an empty list, and let the client request another goal
+            }
 
             while (search)
             {
@@ -98,7 +101,7 @@ namespace Assets.Code.Helper
             }
         }
 
-        private void StartNextPath(Vector2? goal)
+        private bool StartNextPath(Vector2? goal)
         {
             var feetPos = GetPositionOffset();
             startNode = new AStarNode(new Vector2((float)Math.Round(feetPos.x, 2), (float)Math.Round(feetPos.y, 2)), 0, 0, 0, null);
@@ -112,9 +115,16 @@ namespace Assets.Code.Helper
                 startNode.location = NormalizeToBoard(startNode.location);
                 Debug.Log($"overriding startNode to be: {startNode.location.x}, {startNode.location.y} after normalization");
             }
+            
 
-            //Debug.Log(goal.HasValue ? goal.Value : "");
             var goalLocation = goal.HasValue ? NormalizeToBoard(goal.Value) : waypoints[currentWaypoint];
+            if (goalLocation == Vector2.zero) return false;
+
+            if (goal.HasValue)
+            {
+                Debug.Log($"Enemy requested goal location: {goal.Value.x}, {goal.Value.y}. Normalized to {goalLocation.x}, {goalLocation.y}");
+            }
+
             goalNode = new AStarNode(goalLocation, 0, 0, 0, null);
 
             open.Clear();
@@ -125,6 +135,7 @@ namespace Assets.Code.Helper
 
             search = true;
             _lastNeighbor = Vector2.zero;
+            return true;
         }
 
         /// <summary>
@@ -163,6 +174,13 @@ namespace Assets.Code.Helper
                     if (availableSpaces.Contains(normalizedToBoard)) break;
                     Debug.Log($"Trying direction {count}. New Coordinates: {normalizedToBoard.x}, {normalizedToBoard.y}");
                     count++;
+                }
+
+                //TODO: Fix 
+                if (count == 4) //we've exhausted all directions, return indicator that we failed
+                {
+                    Debug.Log($"Could not find a valid tile within 4 cardinal directions of {closest.x}, {closest.y}");
+                    normalizedToBoard = Vector2.zero;
                 }
             }
 

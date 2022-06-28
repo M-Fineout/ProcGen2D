@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace Assets.Scripts.Enemies
 {
+    /// <summary>
+    /// The OG implementation. This implementation does not follow a strict tile to tile based movement system, but does still attempt
+    /// to stay on track.
+    /// </summary>
     public class AStarEnemy : Enemy
     {
         protected override int Health { get; set; } = 3;
@@ -53,7 +57,7 @@ namespace Assets.Scripts.Enemies
 
         //attack
         public bool canAttack = true;
-        public bool isAttacking;
+        protected bool isAttacking;
         protected float attackRadius { get; set; } = 0.20f; //1 space //TODO: Player's transform is still not safe to use here
 
         private void Start()

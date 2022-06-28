@@ -2,8 +2,10 @@ using Assets.Code.Global;
 using Assets.Code.Util;
 using Assets.Scripts.Enemies;
 using Assets.Scripts.Player;
+using Assets.Scripts.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -11,6 +13,7 @@ public class PlayerController : MonoBehaviour
     private float health = 3f;
 
     private const float involuntaryCollisionOffset = 0.3f; //Roughly two tiles (this may need to be adjusted)
+    //NOTE: We have FIXED the sprites pivot point! Now transform.position should give us the proper location
     private const float feetPositionOffset = .14f; //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
 
     private Vector2 lastPos;
@@ -21,21 +24,32 @@ public class PlayerController : MonoBehaviour
 
     float moveX;
     float moveY;
-    bool isMoving;
+    [SerializeField] bool isMoving;
     bool canMove = true;
     [SerializeField] bool isAttacking;
     Rigidbody2D rb;
     Animator animator;
-    SpriteRenderer spriteRenderer;
+    public SpriteRenderer spriteRenderer;
     Vector2 moveDirection;
     BoxCollider2D boxCollider;
-   
-    List<RaycastHit2D> castCollisions = new List<RaycastHit2D>();
+    BoxCollider2D triggerCollider;
 
+    public bool isVulnerable = true;
+    bool inDamageCooldown = false;
     bool handlingCollision;
     bool takingDamage;
     bool isConfused;
     bool isStoned;
+
+    //Move Refactor vars
+    public float moveTime = 0.2f;           //Time it will take object to move, in seconds.
+    public LayerMask blockingLayer;			//Layer on which collision will be checked.
+    private float inverseMoveTime;			//Used to make movement more efficient.
+    private Vector2 end;
+    private float sqrRemainingDistance;
+    private bool smoothMove;
+    private bool inMoveCooldown;
+    private int layerMask;
 
     // Start is called before the first frame update
     void Start()
@@ -44,28 +58,43 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
-        Debug.Log($"Friction: {boxCollider.friction}");
+
+        var boxColliders = GetComponents<BoxCollider2D>();
+        boxCollider = boxColliders.First(x => !x.isTrigger);
+        triggerCollider = boxColliders.First(x => x.isTrigger);
 
         EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
+        EventBus.instance.RegisterCallback(GameEvent.PlayerDropped, PlayerDropped);
+
+        inverseMoveTime = 1 / moveTime;
+        layerMask = LayerMask.GetMask(new string[] { "BlockingLayer" });
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (isAttacking) return;
+        if (isAttacking || isMoving || !canMove) return;
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
             animator.SetTrigger("swordAttack");
         }
 
-        if (!canMove) return;
         //if (isAttacking) return;
         //TODO: If moving involuntarily we should handle that here as well, to keep consistent movement speeds
 
         //Handle movement
-        moveX = Input.GetAxis("Horizontal");
-        moveY = Input.GetAxis("Vertical");
+        //Round to nearest integer value and multiply by scale
+        moveX = ((int)Input.GetAxisRaw("Horizontal")) * 0.16f;
+        moveY = ((int)Input.GetAxisRaw("Vertical")) * 0.16f;
+      
+        //Always prioritize moving LR if both LR and/or TD selected
+        if (moveX != 0)
+        {
+            moveY = 0;
+        }
+
+        Debug.Log($"Moving X in: {moveX}. Moving Y in: {moveY}");
 
         if (isConfused)
         {
@@ -77,23 +106,54 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isAttacking) return;
+        if (!canMove) return;
+        //TODO: We may want to follow AStarEnemyNew's approach and pull out some of the non-physics related stuff in here
+        if (!smoothMove)
+        {
+            MoveNew();
+        }
+        else
+        {
+            if (sqrRemainingDistance > float.Epsilon)
+            {
+                Debug.Log($"Goal: {end.x}, {end.y}");
+                //Find a new position proportionally closer to the end, based on the moveTime
+                Vector3 newPosition = Vector3.MoveTowards(rb.position, end, inverseMoveTime * Time.deltaTime);
+                Debug.Log($"NewPos: {newPosition}");
+                //Call MovePosition on attached Rigidbody2D and move it to the calculated position.
+                rb.MovePosition(newPosition);
+
+                //Recalculate the remaining distance after moving.
+                sqrRemainingDistance = (GetFeetPosition() - end).sqrMagnitude;
+            }
+            else
+            {
+                smoothMove = false;
+                isMoving = false;
+                sqrRemainingDistance = 0;
+                end = Vector2.zero;
+                StartCoroutine(nameof(MoveCooldown));
+            }
+        }        
+    }
+
+    private IEnumerator MoveCooldown()
+    {
+        inMoveCooldown = true;
+        yield return new WaitForSeconds(0.1f);
+        inMoveCooldown = false;
+    }
+
+    private void MoveNew()
+    {
+        if (isAttacking || isMoving || inMoveCooldown) return;
 
         if (moveDirection != Vector2.zero)
         {
+            isMoving = true;
             //if moving, detect terrain first
             DetectTerrain();
-
-            //Move diagonal
-            if (!(isMoving = AttemptMove(moveDirection)))
-            {
-                //Move Hz
-                if (!(isMoving = AttemptMove(new Vector2(moveDirection.x, 0))))
-                {
-                    //Move Vt
-                    isMoving = AttemptMove(new Vector2(0, moveDirection.y));
-                }
-            }
+            AttemptMoveNew(moveDirection);
         }
         else
         {
@@ -129,28 +189,91 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private bool AttemptMove(Vector2 direction)
+    private bool AttemptMoveNew(Vector2 direction)
     {
-        var count = rb.Cast(direction, movementFilter, castCollisions, moveSpeed * Time.fixedDeltaTime + collisionOffset);
-        if (count == 0)
+        //Hit will store whatever our linecast hits when Move is called.
+        RaycastHit2D hit;
+
+        //Set canMove to true if Move was successful, false if failed.
+        bool canMove = MoveNew(direction, out hit);
+
+        //Check if nothing was hit by linecast
+        if (hit.transform == null)
+            //If nothing was hit, return and don't execute further code.
+            return true;
+        else
         {
-            rb.MovePosition(rb.position + Time.deltaTime * moveSpeed * direction);
-            lastPos = rb.position;
+            Debug.Log("Hit obstruction");
+            isMoving = false;
+            return false;
+        }
+    }
+
+    private bool MoveNew(Vector2 direction, out RaycastHit2D hit)
+    {
+        Debug.Log("In MoveNew");
+        //Store start position to move from, based on objects current transform position.
+        Vector2 start = GetFeetPosition(); 
+
+        // Calculate end position based on the direction parameters passed in when calling Move.
+        end = start + direction;
+        
+        //Disable the boxCollider so that linecast doesn't hit this object's own collider.
+        boxCollider.enabled = false;
+
+        //Cast a line from start point to end point checking collision on blockingLayer.
+        hit = Physics2D.Linecast(start, end, layerMask);
+
+        //Re-enable boxCollider after linecast
+        boxCollider.enabled = true;
+
+        //Check if anything was hit
+        if (hit.transform == null)
+        {
+            Debug.Log("No hit detected");
+            sqrRemainingDistance = (start - end).sqrMagnitude;
+            smoothMove = true;
+            lastPos = start;
             return true;
         }
+        else
+        {
+            Debug.Log($"Hit: {hit.transform.name}");
+        }
+
+        //If something was hit, return false, Move was unsuccesful.
         return false;
     }
 
-    private bool AttemptMoveInvoluntary(Vector2 direction)
-    {       
-        var count = rb.Cast(direction, movementFilter, castCollisions, involuntaryCollisionOffset);
-        if (count == 0)
-        {
-            rb.MovePosition(rb.position + direction);
-            return true;
-        }
-        return false;
-    }
+    //Co-routine for moving units from one space to next, takes a parameter end to specify where to move to.
+    //protected IEnumerator SmoothMovement(Vector2 end)
+    //{
+    //    //Calculate the remaining distance to move based on the square magnitude of the difference between current position and end parameter. 
+    //    //Square magnitude is used instead of magnitude because it's computationally cheaper.
+    //    float sqrRemainingDistance = (GetFeetPosition() - end).sqrMagnitude;
+
+    //    //While that distance is greater than a very small amount (Epsilon, almost zero):
+    //    while (sqrRemainingDistance > float.Epsilon)
+    //    {
+    //        Debug.Log("Moving player");
+    //        rb.MovePosition(end);
+    //        //isMoving = false;
+
+    //        //Find a new position proportionally closer to the end, based on the moveTime
+    //        Vector3 newPosition = Vector3.MoveTowards(rb.position, end, inverseMoveTime * Time.deltaTime);
+    //        Debug.Log($"NewPos: {newPosition}");
+    //        //Call MovePosition on attached Rigidbody2D and move it to the calculated position.
+    //        rb.MovePosition(newPosition);
+
+    //        //Recalculate the remaining distance after moving.
+    //        sqrRemainingDistance = (transform.position - end).sqrMagnitude;
+
+    //        //Return and loop until sqrRemainingDistance is close enough to zero to end the function
+    //        yield return null; //Wait for a frame, before reevaluating our loop condition
+    //    }
+
+    //    //isMoving = false;
+    //}
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -170,7 +293,7 @@ public class PlayerController : MonoBehaviour
             var spikePos = collision.transform.position;
             //This subtraction pushes down, the opposite pushes up 0.0
             var direction = (new Vector3(spikePos.x + .08f, spikePos.y + .08f, 0) - transform.position);
-            AttemptMoveInvoluntary(direction);
+            //AttemptMoveInvoluntary(direction);
             //rb.MovePosition(rb.position + new Vector2(direction.x, direction.y));
         }
         else if (collision.CompareTag("Lava"))
@@ -186,6 +309,10 @@ public class PlayerController : MonoBehaviour
             Destroy(collision.gameObject);
             StartCoroutine(nameof(Confused));
         }
+        else if (collision.CompareTag("TrashGas"))
+        {
+            StartCoroutine(nameof(Damaged), GasAttack.DamageDealt);
+        }
         else if (collision.CompareTag(Tags.Exit))
         {
             Debug.Log("Level over!");
@@ -198,13 +325,17 @@ public class PlayerController : MonoBehaviour
             {
                 case Jelly jelly:
                     {
-                        if (jelly.isAttacking)
+                        Debug.Log("Hit by jelly, checking isAttacking");
+                        if (jelly.isAttacking && isVulnerable)
                         {
+                            isVulnerable = false;
+                            Debug.Log("Hit by Jelly, turning off components");
                             spriteRenderer.enabled = false;
                             canMove = false;
                             boxCollider.enabled = false;
-                        }
-                   
+                            //Need this so that jelly does not keep picking up player's trigger when trying to move after absorption
+                            triggerCollider.enabled = false; 
+                        }                   
                     }
                     break;
             }
@@ -212,8 +343,8 @@ public class PlayerController : MonoBehaviour
             Debug.Log($"Collided with enemy: {collision.gameObject.name}");
 
             //if our enemy is not attacking, take damage and push player back
-            StartCoroutine(nameof(Damaged), 1); //conver to variable ContactDamage
-            transform.position = lastPos; //We need a better force applied here to prevent collider sticking 
+            //StartCoroutine(nameof(Damaged), 1); //conver to variable ContactDamage
+            //transform.position = lastPos; //We need a better force applied here to prevent collider sticking 
         }
         handlingCollision = false;
     }
@@ -235,8 +366,8 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Damaged(int damage = 0)
     {
-        if (takingDamage) yield return null;
-        takingDamage = true;
+        if (inDamageCooldown) yield break;
+        StartCoroutine(nameof(DamageCooldown));
         TakeDamage(damage);
 
         var color = spriteRenderer.color;
@@ -245,9 +376,14 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(0.25f);
 
         spriteRenderer.color = color;
-        takingDamage = false;    
     }
 
+    private IEnumerator DamageCooldown()
+    {
+        inDamageCooldown = true;
+        yield return new WaitForSeconds(2.5f);
+        inDamageCooldown = false;
+    }
     private IEnumerator Melt()
     {
         //TODO:
@@ -314,6 +450,35 @@ public class PlayerController : MonoBehaviour
         //StartCoroutine(nameof(Stoned));
     }
 
+    /// <summary>
+    /// The event raised when the player is dropped from a <see cref="Jelly"/> absorption attack.
+    /// TODO: Currently the player's position does not change until they are dropped. This conflicts with enemies that are pursuing as
+    /// they will just travel to the player's last known location and cycle the A* algorithm passing in their goal as their current location
+    /// (since they are on the player's location and are in pursuit)
+    /// To fix this, we can, 
+    /// A, keep the player's position in-sync with the jelly at all times 
+    /// B, raise an event when the player is absorbed, that notifies all other enemies to revert to the <see cref="State.Patrol"/> state.
+    /// We could do a cheeky confused animation for the enemies as well if we go this route.
+    /// C, raise an event to notify all other enemies to track the Jelly who absorbed the player's position
+    /// </summary>
+    /// <param name="message"></param>
+    private void PlayerDropped(EventMessage message)
+    {
+        var dropPos = (Vector2)message.Payload;
+        Debug.Log($"Drop Pos: {dropPos.x} {dropPos.y}");
+
+        //This is key. When we set this, it will prevent teleportation occurring since OnCollisionStay2D gets triggered when we drop
+        //Instead of us having to move, the jelly will compute a safe move, and we don't need to concern ourselves.
+        lastPos = dropPos; 
+
+        transform.position = dropPos;
+        spriteRenderer.enabled = true;
+        boxCollider.enabled = true;
+        triggerCollider.enabled = true;
+        canMove = true;
+        isVulnerable = true;
+    }
+
     private void TakeDamage(int damage)
     {
         Debug.Log($"Player took {damage} damage");
@@ -325,8 +490,19 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private Vector2 GetFeetPosition()
+    {
+        return new Vector2(transform.position.x, transform.position.y);
+    }
+
     private void OnDestroy()
     {
         EventBus.instance.UnregisterCallback(GameEvent.PlayerHit, PlayerHit);
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        transform.position = lastPos;
+        Debug.Log($"OnCollisionStay with {collision.transform.name}");
     }
 }
