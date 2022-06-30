@@ -1,4 +1,5 @@
 using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using Assets.Scripts.Enemies;
 using Assets.Scripts.Player;
@@ -8,8 +9,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, ILoggable
 {
+    private ILoggable Log => this;
     private float health = 3f;
 
     private const float involuntaryCollisionOffset = 0.3f; //Roughly two tiles (this may need to be adjusted)
@@ -51,6 +53,9 @@ public class PlayerController : MonoBehaviour
     private bool inMoveCooldown;
     private int layerMask;
 
+    public int InstanceId { get; set; }
+    public System.Type Type { get; set; }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -65,6 +70,10 @@ public class PlayerController : MonoBehaviour
 
         EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
         EventBus.instance.RegisterCallback(GameEvent.PlayerDropped, PlayerDropped);
+
+        InstanceId = GetInstanceID();
+        Type = GetType();
+        GameLogConfiguration.instance.Register(InstanceId, Type);
 
         inverseMoveTime = 1 / moveTime;
         layerMask = LayerMask.GetMask(new string[] { "BlockingLayer" });
@@ -94,7 +103,7 @@ public class PlayerController : MonoBehaviour
             moveY = 0;
         }
 
-        Debug.Log($"Moving X in: {moveX}. Moving Y in: {moveY}");
+        Log.LogToConsole("Moving X in: {moveX}. Moving Y in: {moveY}");
 
         if (isConfused)
         {
@@ -116,10 +125,10 @@ public class PlayerController : MonoBehaviour
         {
             if (sqrRemainingDistance > float.Epsilon)
             {
-                Debug.Log($"Goal: {end.x}, {end.y}");
+                Log.LogToConsole($"Goal: {end.x}, {end.y}");
                 //Find a new position proportionally closer to the end, based on the moveTime
                 Vector3 newPosition = Vector3.MoveTowards(rb.position, end, inverseMoveTime * Time.deltaTime);
-                Debug.Log($"NewPos: {newPosition}");
+                Log.LogToConsole($"NewPos: {newPosition}");
                 //Call MovePosition on attached Rigidbody2D and move it to the calculated position.
                 rb.MovePosition(newPosition);
 
@@ -203,7 +212,7 @@ public class PlayerController : MonoBehaviour
             return true;
         else
         {
-            Debug.Log("Hit obstruction");
+            Log.LogToConsole("Hit obstruction");
             isMoving = false;
             return false;
         }
@@ -211,7 +220,7 @@ public class PlayerController : MonoBehaviour
 
     private bool MoveNew(Vector2 direction, out RaycastHit2D hit)
     {
-        Debug.Log("In MoveNew");
+        Log.LogToConsole("In MoveNew");
         //Store start position to move from, based on objects current transform position.
         Vector2 start = GetFeetPosition(); 
 
@@ -230,7 +239,7 @@ public class PlayerController : MonoBehaviour
         //Check if anything was hit
         if (hit.transform == null)
         {
-            Debug.Log("No hit detected");
+            Log.LogToConsole("No hit detected");
             sqrRemainingDistance = (start - end).sqrMagnitude;
             smoothMove = true;
             lastPos = start;
@@ -238,7 +247,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            Debug.Log($"Hit: {hit.transform.name}");
+            Log.LogToConsole($"Hit: {hit.transform.name}");
         }
 
         //If something was hit, return false, Move was unsuccesful.
@@ -315,7 +324,7 @@ public class PlayerController : MonoBehaviour
         }
         else if (collision.CompareTag(Tags.Exit))
         {
-            Debug.Log("Level over!");
+            Log.LogToConsole("Level over!");
             EventBus.instance.TriggerEvent(GameEvent.LevelCompleted, new EventMessage());
         }
         else if (collision.CompareTag(Tags.Enemy))
@@ -325,11 +334,11 @@ public class PlayerController : MonoBehaviour
             {
                 case Jelly jelly:
                     {
-                        Debug.Log("Hit by jelly, checking isAttacking");
+                        Log.LogToConsole("Hit by jelly, checking isAttacking");
                         if (jelly.isAttacking && isVulnerable)
                         {
                             isVulnerable = false;
-                            Debug.Log("Hit by Jelly, turning off components");
+                            Log.LogToConsole("Hit by Jelly, turning off components");
                             spriteRenderer.enabled = false;
                             canMove = false;
                             boxCollider.enabled = false;
@@ -339,8 +348,8 @@ public class PlayerController : MonoBehaviour
                     }
                     break;
             }
-            
-            Debug.Log($"Collided with enemy: {collision.gameObject.name}");
+
+            Log.LogToConsole($"Collided with enemy: {collision.gameObject.name}");
 
             //if our enemy is not attacking, take damage and push player back
             //StartCoroutine(nameof(Damaged), 1); //conver to variable ContactDamage
@@ -351,16 +360,16 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log("OnCollisionEnter2D");
+        Log.LogToConsole("OnCollisionEnter2D");
 
         if (collision.gameObject.CompareTag("Lava"))
         {
-            Debug.Log("Collided");
+            Log.LogToConsole("Collided");
             StartCoroutine(nameof(Melt));
         }
         if (collision.gameObject.CompareTag(Tags.Enemy))
         {
-            Debug.Log("Collided with enemy");
+            Log.LogToConsole("Collided with enemy");
         }
     }
 
@@ -384,6 +393,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(2.5f);
         inDamageCooldown = false;
     }
+
     private IEnumerator Melt()
     {
         //TODO:
@@ -411,7 +421,7 @@ public class PlayerController : MonoBehaviour
             //Kill any potential movement
             moveDirection = Vector2.zero;
 
-            Debug.Log("Stoned!");
+            Log.LogToConsole("Stoned!");
             var color = spriteRenderer.color;
             //spriteRenderer.color = new Color(0.8274f, 0.8274f, 0.8274f, 1); //Should be grey
             spriteRenderer.color = new Color(0.3480331f, 0.6378833f, 0.9339623f, 1);
@@ -465,7 +475,7 @@ public class PlayerController : MonoBehaviour
     private void PlayerDropped(EventMessage message)
     {
         var dropPos = (Vector2)message.Payload;
-        Debug.Log($"Drop Pos: {dropPos.x} {dropPos.y}");
+        Log.LogToConsole($"Drop Pos: {dropPos.x} {dropPos.y}");
 
         //This is key. When we set this, it will prevent teleportation occurring since OnCollisionStay2D gets triggered when we drop
         //Instead of us having to move, the jelly will compute a safe move, and we don't need to concern ourselves.
@@ -481,11 +491,11 @@ public class PlayerController : MonoBehaviour
 
     private void TakeDamage(int damage)
     {
-        Debug.Log($"Player took {damage} damage");
+        Log.LogToConsole($"Player took {damage} damage");
         health -= damage;
         if (health <= 0)
         {
-            Debug.Log("Player defeated");
+            Log.LogToConsole("Player defeated");
             EventBus.instance.TriggerEvent(GameEvent.PlayerDefeated, new EventMessage());
         }
     }
@@ -503,6 +513,6 @@ public class PlayerController : MonoBehaviour
     private void OnCollisionStay2D(Collision2D collision)
     {
         transform.position = lastPos;
-        Debug.Log($"OnCollisionStay with {collision.transform.name}");
+        Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
     }
 }

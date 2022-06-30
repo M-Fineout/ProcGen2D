@@ -258,7 +258,7 @@ namespace Assets.Scripts.Enemies
         private void AnimateMove()
         {
             //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
-            var normal = (end - (Vector2)transform.position).normalized; //May be backwards
+            var normal = (end - (Vector2)transform.position).normalized;
             if (Mathf.Round(normal.x) == 0)
             {
                 facing = (int)Mathf.Round(normal.y); //Anim matches the cardinality (up = 1, down = -1)

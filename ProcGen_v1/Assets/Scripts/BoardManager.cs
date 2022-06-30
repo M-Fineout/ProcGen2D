@@ -30,6 +30,7 @@ public class BoardManager : MonoBehaviour
     public GameObject spikes;
     public GameObject lava;
     public GameObject hiddenButton;
+    public GameObject needler;
 
     //Special
     public GameObject ice;
@@ -99,17 +100,17 @@ public class BoardManager : MonoBehaviour
 
         SetupFloor();
         SetupWalls();
+
         //SetupObstructionsBoxWithDoor();
         SetupObstructionsConeMaze();
+
         SetupExit();
-        //SetupTraps();
+        SetupTraps();
         SetupPlayer();
         //SetupSpecialTiles();
-        //SetupEnemiesTesting(medusa);
-        //SetupEnemiesTesting(wizard);
-        //SetupEnemiesTesting(cyclops);
-        //SetupEnemiesTesting(jelly);
-        //SetupEnemiesTesting(beholder);
+        SetupEnemiesTesting(wizard);
+        SetupEnemiesTesting(jelly);
+        SetupEnemiesTesting(beholder);
         SetupEnemiesTesting(trash);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
@@ -119,11 +120,8 @@ public class BoardManager : MonoBehaviour
         EmptyTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         WallTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 1));
-        //Add cyclops static location to blueprints for testing
-        //Blueprints.Add(new Vector2(2.56f, 3.04f), 0);
-        //Blueprints.Add(new Vector2(0.32f, 2.72f), 0);
 
-        Physics.bounceThreshold = .0001f;
+        //Physics.bounceThreshold = .0001f;
     }
 
     private bool IsWall(GameObject gameObject)
@@ -213,13 +211,15 @@ public class BoardManager : MonoBehaviour
 
     private void SetupTraps()
     {
-        AddToBoard(2, 3, spikes);
+        //AddToBoard(2, 3, spikes);
 
-        AddToBoard(5, 4, lava);
-        AddToBoard(5, 5, lava);
-        AddToBoard(5, 6, lava);
+        //AddToBoard(5, 4, lava);
+        //AddToBoard(5, 5, lava);
+        //AddToBoard(5, 6, lava);
 
-        AddToBoard(7, 4, hiddenButton);
+        //AddToBoard(7, 4, hiddenButton);
+
+        //AddToBoard(5, 5, needler);
     }
 
     private void SetupPlayer()
@@ -284,8 +284,8 @@ public class BoardManager : MonoBehaviour
             //AddToBoard(8, 3, enemy);
             AddToBoard(8, 2, enemy);
             AddToBoard(3, 5, enemy);
-            AddToBoard(3, 6, enemy);
-            AddToBoard(3, 7, enemy);
+            //AddToBoard(3, 6, enemy);
+            //AddToBoard(3, 7, enemy);
             //AddToBoard(4, 8, enemy);
             //AddToBoard(4, 9, enemy);
             //AddToBoard(4, 10, enemy);
@@ -363,8 +363,8 @@ public class BoardManager : MonoBehaviour
 
         if (enemy == trash)
         {
-            AddToBoard(5, 11, enemy);
-            AddToBoard(7, 15, enemy);
+            AddToBoard(11, 11, enemy);
+            AddToBoard(9, 15, enemy);
         }
     }
 

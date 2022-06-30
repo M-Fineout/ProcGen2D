@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace Assets.Code.Util
 {
+    /// <summary>
+    /// Static logger used for high-level logging, non-game logging.
+    /// </summary>
     public static class Logger
     {
         public static void LogSingletonConflict([CallerMemberName] string caller = "")
