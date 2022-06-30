@@ -83,7 +83,7 @@ namespace Assets.Scripts.Enemies
             while (lastPositions.Count >= 5) //Once queue reaches size 5 or more, reduce it. Keep mem-footprint low
             {                
                 lastPositions.TryDequeue(out Vector2 result);
-                //Debug.Log($"Removing outdated spaces. Spaces left {lastPositions.Count}");
+                //Log.LogToConsole($"Removing outdated spaces. Spaces left {lastPositions.Count}");
             }
 
             if (isAttacking || calculatingRoute || isMoving || inMoveCooldown) return;
@@ -118,10 +118,10 @@ namespace Assets.Scripts.Enemies
 
             if (sqrRemainingDistance > float.Epsilon)
             {                
-                Debug.Log($"Goal: {end.x}, {end.y}");
+                Log.LogToConsole($"Goal: {end.x}, {end.y}");
                 //Find a new position proportionally closer to the end, based on the moveTime
                 Vector3 newPosition = Vector3.MoveTowards(rb.position, end, inverseMoveTime * Time.deltaTime);
-                Debug.Log($"NewPos: {newPosition}");
+                Log.LogToConsole($"NewPos: {newPosition}");
                 //Call MovePosition on attached Rigidbody2D and move it to the calculated position.
                 rb.MovePosition(newPosition);
 
@@ -161,7 +161,7 @@ namespace Assets.Scripts.Enemies
         {
             isAttacking = true;
             anim.SetBool("isAttacking", isAttacking);
-            Debug.Log("Attacking player");
+            Log.LogToConsole("Attacking player");
         }
 
         private void Pursue()
@@ -170,14 +170,14 @@ namespace Assets.Scripts.Enemies
             var distanceFromPlayer = GetPlayerDistance();
             if (distanceFromPlayer > pursuitRadius)
             {
-                Debug.Log($"Stopping pursuit. {distanceFromPlayer} away from player");
+                Log.LogToConsole($"Stopping pursuit. {distanceFromPlayer} away from player");
                 state = State.Patrol;
             }
-            Debug.Log($"Player distance: {distanceFromPlayer}");
+            Log.LogToConsole($"Player distance: {distanceFromPlayer}");
             //Attack
             if (distanceFromPlayer < attackRadius && IsFacingPlayerRaycast())
             {
-                Debug.Log("Going into attack state");
+                Log.LogToConsole("Going into attack state");
                 state = State.Attack;
             }
         }
@@ -212,12 +212,12 @@ namespace Assets.Scripts.Enemies
 
             var start = (Vector2)transform.position;
 
-            Debug.Log($"Start pos: {start.x}, {start.y}");
-            Debug.Log($"Next waypoint: {travelWaypoints[currentTravelWaypoint].x}, {travelWaypoints[currentTravelWaypoint].y}");
+            Log.LogToConsole($"Start pos: {start.x}, {start.y}");
+            Log.LogToConsole($"Next waypoint: {travelWaypoints[currentTravelWaypoint].x}, {travelWaypoints[currentTravelWaypoint].y}");
             // Calculate end position based on the direction parameters passed in when calling Move.
             end = start + (travelWaypoints[currentTravelWaypoint] - start);
 
-            Debug.Log($"End: {end.x}, {end.y}");
+            Log.LogToConsole($"End: {end.x}, {end.y}");
             //Disable the boxCollider so that linecast doesn't hit this object's own collider.
             solidCollider.enabled = false;
             triggerCollider.enabled = false;
@@ -236,7 +236,7 @@ namespace Assets.Scripts.Enemies
             //Check if anything was hit
             if (hit.transform == null)
             {
-                Debug.Log("No hit detected");
+                Log.LogToConsole("No hit detected");
                 lastPositions.Enqueue(start);
                 sqrRemainingDistance = (start - end).sqrMagnitude;
                 readyToMove = true;
@@ -245,12 +245,12 @@ namespace Assets.Scripts.Enemies
             {
                 if (canAttack && hit.transform.gameObject == player)
                 {
-                    Debug.Log("Found player organically");
+                    Log.LogToConsole("Found player organically");
                     state = State.Attack;
                     isMoving = false;
                     return;
                 }
-                Debug.Log($"Hit: {hit.transform.name}");
+                Log.LogToConsole($"Hit: {hit.transform.name}");
                 ResetTravelPlans();
             }
         }
@@ -293,7 +293,7 @@ namespace Assets.Scripts.Enemies
         private void OnboardWorker()
         {
             worker = new AStarWorker(gameObject, pathLength, feetPositionOffset);
-            Debug.Log($"Worker onboarded");
+            Log.LogToConsole($"Worker onboarded");
         }
 
         private float GetPlayerDistance()
@@ -306,7 +306,7 @@ namespace Assets.Scripts.Enemies
 
         private void StartPursuit()
         {
-            Debug.Log("Pursuing player!");
+            Log.LogToConsole("Pursuing player!");
             state = State.Pursue;
             ResetTravelPlans();
         }
@@ -345,7 +345,7 @@ namespace Assets.Scripts.Enemies
                     return spriteRenderer.flipX ? Vector2.left : Vector2.right;
                 default:
                     {
-                        Debug.Log($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
+                        Log.LogToConsole($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
                         return Vector2.zero;
                     }
             }
@@ -372,7 +372,7 @@ namespace Assets.Scripts.Enemies
                 else //We are still stuck on the same object, try to revert to another position instead
                 {           
                     spacesToBacktrack++;
-                    Debug.Log($"Stuck on {collision.gameObject.name} for {spacesToBacktrack} passes");
+                    Log.LogToConsole($"Stuck on {collision.gameObject.name} for {spacesToBacktrack} passes");
                 }
 
                 if (lastPositions.Count <= spacesToBacktrack) //We've exhausted all of our possibilities (this STILL happens)
@@ -397,14 +397,14 @@ namespace Assets.Scripts.Enemies
                         var hit = Physics2D.Raycast(candidate, Vector2.zero); //Check a tile location for any collisions
                         if (hit.transform == null)
                         {
-                            Debug.Log($"Moving stuck object after {i + 1} tries to {candidate.x}, {candidate.y}");
+                            Log.LogToConsole($"Moving stuck object after {i + 1} tries to {candidate.x}, {candidate.y}");
                             Debug.DrawLine(transform.position, candidate, Color.green, 2f);
                             transform.position = candidate;
                             return;
                         }
                         else
                         {
-                            Debug.Log($"In OnCollisionStay2D: Could not move to {candidate.x}, {candidate.y}");
+                            Log.LogToConsole($"In OnCollisionStay2D: Could not move to {candidate.x}, {candidate.y}");
                             directions.Remove(direction);
                         }
                     }
@@ -415,7 +415,7 @@ namespace Assets.Scripts.Enemies
                 
                 transform.position = nextPreviousLocation;
             }
-            Debug.Log($"OnCollisionStay with {collision.transform.name}");
+            Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
         }
     }
 }

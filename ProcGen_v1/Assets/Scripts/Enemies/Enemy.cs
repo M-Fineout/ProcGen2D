@@ -1,4 +1,5 @@
 ﻿using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using System;
 using System.Collections;
@@ -8,9 +9,13 @@ using UnityEngine;
 
 namespace Assets.Scripts.Enemies
 {
-    public class Enemy : MonoBehaviour
+    public class Enemy : MonoBehaviour, ILoggable
     {
+        protected ILoggable Log => this;
         protected virtual int Health { get; set; }
+        public int InstanceId { get; set; }
+        public Type Type { get; set; }
+
         protected SpriteRenderer spriteRenderer;
 
         protected Dictionary<GameEvent, Action<EventMessage>> Registrations = new();
@@ -21,6 +26,10 @@ namespace Assets.Scripts.Enemies
         protected void Prime()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
+
+            InstanceId = GetInstanceID();
+            Type = GetType(); //For now, we will let everything fall under the Enemy umbrella. Convert to more granular later on
+            GameLogConfiguration.instance.Register(InstanceId, Type);
         }
 
         public virtual void TakeDamage(int damage)
@@ -44,7 +53,7 @@ namespace Assets.Scripts.Enemies
 
         private IEnumerator Damaged()
         {
-            Debug.Log("Taking Damage");
+            Log.LogToConsole("Taking Damage");
             var color = spriteRenderer.color;
             spriteRenderer.color = new Color(0.8018868f, 0.301258f, 0.2458615f, 1);
 

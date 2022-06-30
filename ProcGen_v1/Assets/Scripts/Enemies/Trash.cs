@@ -17,7 +17,7 @@ namespace Assets.Scripts.Enemies
         {
             solidCollider.enabled = false;
             anim.SetBool("isAttacking", true);
-            Debug.Log("Attacking player");
+            Log.LogToConsole("Attacking player");
         }
 
         public override void AttackFinished()

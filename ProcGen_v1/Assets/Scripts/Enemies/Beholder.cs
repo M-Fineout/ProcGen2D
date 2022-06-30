@@ -19,7 +19,7 @@ namespace Assets.Scripts.Enemies
             var hits = Physics2D.RaycastAll(transform.position, GetFacingVector(), attackDistance);
             if (hits.Any(x => x.transform.gameObject.Equals(player))) //We hit something
             {
-                Debug.Log($"Beholder {GetHashCode()} Hit player"); //We hit something
+                Log.LogToConsole($"Beholder {GetHashCode()} Hit player"); //We hit something
                 EventBus.instance.TriggerEvent(Code.Global.GameEvent.PlayerHit, new EventMessage { Payload = attackDamage });
             }
             base.AttackFinished();
@@ -37,7 +37,7 @@ namespace Assets.Scripts.Enemies
                     return spriteRenderer.flipX ? Vector2.left : Vector2.right;
                 default:
                     {
-                        Debug.Log($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
+                        Log.LogToConsole($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
                         return Vector2.zero;
                     }
             }
@@ -45,12 +45,12 @@ namespace Assets.Scripts.Enemies
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
-            Debug.Log($"Beholder Collided with {collision.gameObject.name}");
+            Log.LogToConsole($"Beholder Collided with {collision.gameObject.name}");
         }
 
         private void OnTriggerEnter2D(Collider2D collision)
         {
-            Debug.Log($"Beholder Collided with {collision.gameObject.name} in OnTriggerEnter");
+            Log.LogToConsole($"Beholder Collided with {collision.gameObject.name} in OnTriggerEnter");
         }
     }
 }

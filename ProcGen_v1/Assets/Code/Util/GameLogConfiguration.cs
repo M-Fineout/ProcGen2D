@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Assets.Code.Helper;
+using Assets.Scripts.Enemies;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,6 +26,8 @@ namespace Assets.Code.Util
             }
 
             TypeConfigurations.Add(typeof(PlayerController), true);
+            TypeConfigurations.Add(typeof(Enemy), true);
+            TypeConfigurations.Add(typeof(AStarWorker), false);
         }
 
         /// <summary>

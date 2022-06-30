@@ -20,7 +20,7 @@ namespace Assets.Scripts.Enemies
         {
             solidCollider.enabled = false;
             anim.SetBool("isAttacking", true);
-            Debug.Log("Attacking player");
+            Log.LogToConsole("Attacking player");
         }
 
         public override void AttackFinished()
@@ -49,7 +49,7 @@ namespace Assets.Scripts.Enemies
                     return spriteRenderer.flipX ? Vector2.left : Vector2.right;
                 default:
                     {
-                        Debug.Log($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
+                        Log.LogToConsole($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
                         return Vector2.zero;
                     }
             }
@@ -59,12 +59,12 @@ namespace Assets.Scripts.Enemies
         {
             if (isAttacking && collision.gameObject == player && collision.gameObject.GetComponent<PlayerController>().isVulnerable) //We have engulfed player
             {
-                Debug.Log("Absorbed player");
+                Log.LogToConsole("Absorbed player");
                 StartCoroutine(nameof(Cooldown));
                 //SetAnim = player inside
             }
 
-            Debug.Log($"collided with {collision.gameObject.name}");
+            Log.LogToConsole($"collided with {collision.gameObject.name}");
         }
 
         private IEnumerator Cooldown()
@@ -85,7 +85,7 @@ namespace Assets.Scripts.Enemies
                 }
                 else
                 {
-                    Debug.Log($"Searching for drop zone");
+                    Log.LogToConsole($"Searching for drop zone");
                     //We want the second to last position, since the absolute last one is the space we are currently residing on when in-between moves
                     var lastPosVisited = lastPositions.Skip(lastPositions.Count - 2).First(); 
                     var hit = Physics2D.Raycast(lastPosVisited, Vector2.zero);

@@ -1,4 +1,5 @@
 ﻿using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using System;
 using System.Collections.Generic;
@@ -9,8 +10,10 @@ using UnityEngine;
 
 namespace Assets.Code.Helper
 {
-    public class AStarWorker
+    public class AStarWorker : ILoggable
     {
+        private ILoggable Log => this;
+
         //Static
         private const float SCALE = 0.16f;
         private readonly float boardWidth = 24 - 1 * SCALE;
@@ -39,6 +42,9 @@ namespace Assets.Code.Helper
         //Debugging
         private Vector2 _lastNeighbor;
 
+        public int InstanceId { get; set; }
+        public Type Type { get; set; }
+
         public AStarWorker(GameObject client, int pathLength, float feetPosOffset = 0)
         {
             PathLength = pathLength;
@@ -60,9 +66,9 @@ namespace Assets.Code.Helper
                 Search(lastPos);
             }
 
-            Debug.Log($"Getting path");
+            Log.LogToConsole($"Getting path");
             GetPath();
-            Debug.Log($"Waypoints returned");
+            Log.LogToConsole($"Waypoints returned");
             return travelWaypoints;        
         }
 
@@ -78,6 +84,10 @@ namespace Assets.Code.Helper
             EventBus.instance.RegisterCallback(GameEvent.BlueprintsOutgoing, BlueprintsReceived);
             EventBus.instance.TriggerEvent(GameEvent.EmptyTilesRequested, new EventMessage());
             EventBus.instance.TriggerEvent(GameEvent.BlueprintsRequested, new EventMessage());
+
+            InstanceId = GetHashCode();
+            Type = GetType();
+            GameLogConfiguration.instance.Register(InstanceId, Type);
         }
 
         private void EmptyTilesReceived(EventMessage message)
@@ -89,7 +99,7 @@ namespace Assets.Code.Helper
         private void BlueprintsReceived(EventMessage message)
         {
             blueprints = (Dictionary<Vector2, int>)message.Payload;
-            //Debug.Log(string.Join(" ", blueprints.Keys.OrderBy(x => x.x)));
+            //Log.LogToConsole(string.Join(" ", blueprints.Keys.OrderBy(x => x.x)));
         }
 
         private void CalculateWaypoints()
@@ -105,7 +115,7 @@ namespace Assets.Code.Helper
         {
             var feetPos = GetPositionOffset();
             startNode = new AStarNode(new Vector2((float)Math.Round(feetPos.x, 2), (float)Math.Round(feetPos.y, 2)), 0, 0, 0, null);
-            Debug.Log($"Starting at node {startNode.location.x}, {startNode.location.y}");
+            Log.LogToConsole($"Starting at node {startNode.location.x}, {startNode.location.y}");
 
             //This appears to happen when we need to recalculate a route unexpectedly.
             //We could allow the client to pass in the desired start position and avoid some of this extra work?
@@ -113,7 +123,7 @@ namespace Assets.Code.Helper
             if (!availableSpaces.Contains(startNode.location))
             {
                 startNode.location = NormalizeToBoard(startNode.location);
-                Debug.Log($"overriding startNode to be: {startNode.location.x}, {startNode.location.y} after normalization");
+                Log.LogToConsole($"overriding startNode to be: {startNode.location.x}, {startNode.location.y} after normalization");
             }
             
 
@@ -122,7 +132,7 @@ namespace Assets.Code.Helper
 
             if (goal.HasValue)
             {
-                Debug.Log($"Enemy requested goal location: {goal.Value.x}, {goal.Value.y}. Normalized to {goalLocation.x}, {goalLocation.y}");
+                Log.LogToConsole($"Enemy requested goal location: {goal.Value.x}, {goal.Value.y}. Normalized to {goalLocation.x}, {goalLocation.y}");
             }
 
             goalNode = new AStarNode(goalLocation, 0, 0, 0, null);
@@ -172,19 +182,19 @@ namespace Assets.Code.Helper
                 {
                     normalizedToBoard = dir + closest;
                     if (availableSpaces.Contains(normalizedToBoard)) break;
-                    Debug.Log($"Trying direction {count}. New Coordinates: {normalizedToBoard.x}, {normalizedToBoard.y}");
+                    Log.LogToConsole($"Trying direction {count}. New Coordinates: {normalizedToBoard.x}, {normalizedToBoard.y}");
                     count++;
                 }
 
                 //TODO: Fix 
                 if (count == 4) //we've exhausted all directions, return indicator that we failed
                 {
-                    Debug.Log($"Could not find a valid tile within 4 cardinal directions of {closest.x}, {closest.y}");
+                    Log.LogToConsole($"Could not find a valid tile within 4 cardinal directions of {closest.x}, {closest.y}");
                     normalizedToBoard = Vector2.zero;
                 }
             }
 
-            Debug.Log($"Goal: {goal.x}, {goal.y} was normalized to board: {normalizedToBoard.x}, {normalizedToBoard.y}. Count: {count}");
+            Log.LogToConsole($"Goal: {goal.x}, {goal.y} was normalized to board: {normalizedToBoard.x}, {normalizedToBoard.y}. Count: {count}");
             return normalizedToBoard;
         }
 
@@ -198,34 +208,34 @@ namespace Assets.Code.Helper
 
             foreach (var dir in directions)
             {
-                //Debug.Log($"{dir.x}, {dir.y}");
+                //Log.LogToConsole($"{dir.x}, {dir.y}");
                 var neighbor = dir + thisNode.location;
                 var neighborNormalized = new Vector2((float)Math.Round(neighbor.x, 2), (float)Math.Round(neighbor.y, 2));
-                //Debug.Log($"{neighbor.x}, {neighbor.y}");
-                //Debug.Log($"{neighborNormalized.x}, {neighborNormalized.y}");
+                //Log.LogToConsole($"{neighbor.x}, {neighbor.y}");
+                //Log.LogToConsole($"{neighborNormalized.x}, {neighborNormalized.y}");
 
                 if (blueprints.ContainsKey(neighborNormalized) && blueprints[neighborNormalized] == 1)
                 {
                     //closed.Add(new AStarNode(neighborNormalized, 0, 0, 0, thisNode));
-                    //Debug.Log("Hit wall");
+                    //Log.LogToConsole("Hit wall");
                     continue;
                 }
 
                 //if (blueprints.ContainsKey(neighborNormalized) && blueprints[neighborNormalized] == 0)
                 //{
                 //    //closed.Add(new AStarNode(neighborNormalized, 0, 0, 0, thisNode));
-                //    Debug.Log($"Location is available {neighborNormalized.x}, {neighborNormalized.y}");
+                //    Log.LogToConsole($"Location is available {neighborNormalized.x}, {neighborNormalized.y}");
                 //}
 
                 if (!blueprints.ContainsKey(neighborNormalized))
                 {
-                    //Debug.Log($"Neighbor space {neighborNormalized} not found in blueprints!");
+                    //Log.LogToConsole($"Neighbor space {neighborNormalized} not found in blueprints!");
                 }
 
                 if (neighborNormalized.x < SCALE || neighborNormalized.x >= boardWidth ||
                     neighborNormalized.y < SCALE || neighborNormalized.y >= boardLength) //Neighbor is outside of board
                 {
-                    // Debug.Log($"neighbor outside of bounds {neighborNormalized.x}, {neighborNormalized.y}");
+                    // Log.LogToConsole($"neighbor outside of bounds {neighborNormalized.x}, {neighborNormalized.y}");
                     continue;
                 }
 
@@ -262,8 +272,8 @@ namespace Assets.Code.Helper
                 //Draw out our path (would be good to see what we actually calculated)
                 //Return 5 wp's to the client so that they can at least keep moving (They'll make another request once they are through, so this should be a decent solution)
                 //We need to still refresh our settings as seen in the "if (thisNode.location == goalNode.location)" block above
-                Debug.Log($"Waypoints on path: {travelWaypoints.Count}");
-                Debug.Log($"Made it to index error. Closed: {closed.Count}, , Neighbor Not added last: {_lastNeighbor.x}, {_lastNeighbor.y}. Goal: {goalNode.location.x}, {goalNode.location.y}");
+                Log.LogToConsole($"Waypoints on path: {travelWaypoints.Count}");
+                Log.LogToConsole($"Made it to index error. Closed: {closed.Count}, , Neighbor Not added last: {_lastNeighbor.x}, {_lastNeighbor.y}. Goal: {goalNode.location.x}, {goalNode.location.y}");
             }
 
             //Grab our lowest F value
@@ -276,8 +286,8 @@ namespace Assets.Code.Helper
 
         private void EndSearch()
         {
-            Debug.Log("Closed: " + closed.Count);
-            Debug.Log($"Goal found!");
+            Log.LogToConsole("Closed: " + closed.Count);
+            Log.LogToConsole($"Goal found!");
 
             //Restart loop, or continue to next waypoint
             //Do we want to increase this even when the goal was client defined?
@@ -333,13 +343,13 @@ namespace Assets.Code.Helper
             {
                 //Add waypoint to our list
                 travelWaypoints.Add(lastPos.location);
-                //Debug.Log($"Added {lastPos.location.x}, {lastPos.location.y} to path");
-                //Debug.Log($"In blueprints: { blueprints.ContainsKey(lastPos.location) && blueprints[lastPos.location] == 1}");
+                //Log.LogToConsole($"Added {lastPos.location.x}, {lastPos.location.y} to path");
+                //Log.LogToConsole($"In blueprints: { blueprints.ContainsKey(lastPos.location) && blueprints[lastPos.location] == 1}");
                 lastPos = lastPos.parent;
             }
 
             travelWaypoints.Reverse();
-            //Debug.Log($"Path built, starting travel, {travelWaypoints.Count} waypoints");
+            //Log.LogToConsole($"Path built, starting travel, {travelWaypoints.Count} waypoints");
         }
 
         /// <summary>
