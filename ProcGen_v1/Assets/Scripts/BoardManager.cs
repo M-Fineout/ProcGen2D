@@ -64,7 +64,7 @@ public class BoardManager : MonoBehaviour
     {
         //Debug.Log($"BoardManager created {this.GetHashCode()}");
         RegisterEvents();
-        enemies = new List<GameObject> { wizard, cyclops, medusa, jelly, beholder };
+        enemies = new List<GameObject> { wizard, cyclops, medusa, jelly, beholder, trash };
 
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
     }                       
@@ -392,12 +392,6 @@ public class BoardManager : MonoBehaviour
             BoardMap[mapPos] = toInstantiate;
         }
 
-        //else if (toInstantiate != wizard) //FOR TESTING TODO: REMOVE THIS
-        //{
-        //    BoardMap[mapPos] = toInstantiate;
-        //}
-
-        
         //Add to total enemy count
         if (enemies.Contains(toInstantiate))
         {
