@@ -2,6 +2,11 @@
 {
     public enum GameEvent
     {
+        TicketRequested,
+        TicketFulfilled,
+        TurnFinished,
+        CurrentTurn,
+
         //HeartBeat communicates to the GameManager that BoardManager is ready for requests
         //For now, this is a roundabout way to NOT run all of board setup in the Unity Start method (This is subject to change)
         HeartBeating,

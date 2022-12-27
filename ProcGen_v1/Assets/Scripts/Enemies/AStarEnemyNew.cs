@@ -1,5 +1,7 @@
-﻿using Assets.Code.Global;
+﻿using Assets.Code;
+using Assets.Code.Global;
 using Assets.Code.Helper;
+using Assets.Code.Util;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -34,7 +36,7 @@ namespace Assets.Scripts.Enemies
         private bool waitingForRoute = true;
 
         private Vector2 moveDirection;
-        private float pursuitRadius = 1.5f;
+        private float pursuitRadius = 1.5f; //Change to allow override
         protected float attackRadius { get; set; } = 0.16f; //1 space //TODO: Player's transform is still not safe to use here
 
         private Vector2? target;
@@ -80,13 +82,20 @@ namespace Assets.Scripts.Enemies
 
         private void Update()
         {
+            if (TicketNumber != Container.instance.MovementConductor.current) return;
+
+            Debug.Log("Found match");
             while (lastPositions.Count >= 5) //Once queue reaches size 5 or more, reduce it. Keep mem-footprint low
             {                
                 lastPositions.TryDequeue(out Vector2 result);
                 //Log.LogToConsole($"Removing outdated spaces. Spaces left {lastPositions.Count}");
             }
 
-            if (isAttacking || calculatingRoute || isMoving || inMoveCooldown) return;
+            if (isAttacking || calculatingRoute || isMoving || inMoveCooldown)
+            {
+                TurnFinished();
+                return;
+            }
 
             //A*
             if (waitingForRoute)
@@ -106,6 +115,13 @@ namespace Assets.Scripts.Enemies
                     Attack();
                     break;
             }
+
+            TurnFinished();
+        }
+
+        private void TurnFinished()
+        {
+            EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
         }
 
         /// <summary>
@@ -152,9 +168,10 @@ namespace Assets.Scripts.Enemies
 
         public virtual void AttackFinished()
         {
-            isAttacking = false;
-            anim.SetBool("isAttacking", isAttacking);
             state = State.Patrol;
+            Debug.Log("Attack finished");
+            isAttacking = false;
+            anim.SetBool("isAttacking", isAttacking);           
         }
 
         protected virtual void Attack()

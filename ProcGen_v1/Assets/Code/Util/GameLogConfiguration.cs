@@ -25,9 +25,9 @@ namespace Assets.Code.Util
                 Logger.LogSingletonConflict();
             }
 
-            TypeConfigurations.Add(typeof(PlayerController), true);
-            TypeConfigurations.Add(typeof(Enemy), true);
-            TypeConfigurations.Add(typeof(AStarWorker), false);
+            //TypeConfigurations.Add(typeof(PlayerController), true);
+            //TypeConfigurations.Add(typeof(Enemy), true);
+            TypeConfigurations.Add(typeof(AStarWorker), true);
         }
 
         /// <summary>

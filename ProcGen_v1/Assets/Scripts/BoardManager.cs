@@ -102,20 +102,20 @@ public class BoardManager : MonoBehaviour
         SetupWalls();
 
         //SetupObstructionsBoxWithDoor();
-        SetupObstructionsConeMaze();
+        //SetupObstructionsConeMaze();
 
-        SetupExit();
+        //SetupExit();
         SetupTraps();
         SetupPlayer();
-        //SetupSpecialTiles();
-        SetupEnemiesTesting(wizard);
+        SetupSpecialTiles();
+        //SetupEnemiesTesting(wizard);
         SetupEnemiesTesting(jelly);
-        SetupEnemiesTesting(beholder);
-        SetupEnemiesTesting(trash);
+        //SetupEnemiesTesting(beholder);
+        //SetupEnemiesTesting(trash);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
-        var enemySpaces = BoardMap.Where(x => x.Value == cyclops).Select(x => x.Key).ToList();
+        var enemySpaces = BoardMap.Where(x => x.Value == jelly).Select(x => x.Key).ToList();
 
         EmptyTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
@@ -357,8 +357,46 @@ public class BoardManager : MonoBehaviour
 
         if (enemy == jelly)
         {
-            AddToBoard(5, 11, enemy);
-            AddToBoard(7, 15, enemy);
+            //Adds enemies to the top half of the board
+            for (var x = 1; x < boardWidth - 1; x++)
+            {
+                for (var y = 15; y < boardLength - 1; y++)
+                {
+                    AddToBoard(x, y, enemy);
+                }
+            }
+
+            //AddToBoard(5, 11, enemy);
+            //AddToBoard(7, 15, enemy);
+            //AddToBoard(15, 21, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(4, 9, enemy);
+            ////AddToBoard(4, 10, enemy);
+            ////AddToBoard(4, 11, enemy);
+            ////AddToBoard(4, 12, enemy);
+            //AddToBoard(5, 9, enemy);
+            //AddToBoard(5, 10, enemy);
+            //AddToBoard(5, 11, enemy);
+            //AddToBoard(2, 12, enemy);
+            //AddToBoard(16, 20, enemy);
+            //AddToBoard(3, 18, enemy);
+            //AddToBoard(6, 12, enemy);
+            //AddToBoard(6, 2, enemy);
+            //AddToBoard(2, 19, enemy);
+            //AddToBoard(1, 15, enemy);
+            //AddToBoard(9, 15, enemy);
+
+            //AddToBoard(15, 21, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(7, 15, enemy);
         }
 
         if (enemy == trash)

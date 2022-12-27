@@ -53,6 +53,10 @@ public class PlayerController : MonoBehaviour, ILoggable
     private bool inMoveCooldown;
     private int layerMask;
 
+    private Facing facing;
+    private Facing previousFacing;
+    private float momentum;
+
     public int InstanceId { get; set; }
     public System.Type Type { get; set; }
 
@@ -103,7 +107,7 @@ public class PlayerController : MonoBehaviour, ILoggable
             moveY = 0;
         }
 
-        Log.LogToConsole("Moving X in: {moveX}. Moving Y in: {moveY}");
+        Log.LogToConsole($"Moving X in: {moveX}. Moving Y in: {moveY}");
 
         if (isConfused)
         {
@@ -141,7 +145,7 @@ public class PlayerController : MonoBehaviour, ILoggable
                 isMoving = false;
                 sqrRemainingDistance = 0;
                 end = Vector2.zero;
-                StartCoroutine(nameof(MoveCooldown));
+                //StartCoroutine(nameof(MoveCooldown));
             }
         }        
     }
@@ -149,7 +153,8 @@ public class PlayerController : MonoBehaviour, ILoggable
     private IEnumerator MoveCooldown()
     {
         inMoveCooldown = true;
-        yield return new WaitForSeconds(0.1f);
+        var cooldown = 0.1f - momentum > 0 ? 0.1f - momentum : 0.02f; 
+        yield return new WaitForSeconds(cooldown);
         inMoveCooldown = false;
     }
 
@@ -164,20 +169,50 @@ public class PlayerController : MonoBehaviour, ILoggable
             DetectTerrain();
             AttemptMoveNew(moveDirection);
         }
-        else
+        else //Move this block to another function (TransitionToIdle() or something like that)
         {
             isMoving = false;
+            animator.SetBool("isMoving", isMoving);
+            animator.SetFloat("Facing", (float)facing);
+
+            //Set movespeed back
+            moveSpeed = 1.0f;
+            return;
+        }
+
+        //Otherwise compute facing so we can set it properly when we need to idle
+        //Facing:
+        //0 = right
+        //1 = left
+        //2 = up
+        //3 = down
+        if (moveX == 0)
+        {
+            facing = moveY >= 0 ? Facing.Up : Facing.Down;
+        }
+        else
+        {
+            facing = moveX > 0 ? Facing.Right : Facing.Left;
         }
 
         animator.SetBool("isMoving", isMoving);
-        // Set direction of sprite to movement direction
-        if (isMoving)
-        {
-            spriteRenderer.flipX = moveX < 0;
-        }
+        animator.SetFloat("Horizontal", moveX);
+        animator.SetFloat("Vertical", moveY);
 
-        //Set movespeed back
+        //Momentum
+        //if (facing == previousFacing)
+        //{
+        //    momentum += 0.01f;
+        //    Debug.Log("Movespeed " + moveSpeed);
+        //}
+        //else
+        //{
+        //    momentum = 0;
+        //}
+
+        //Set movespeed back 
         moveSpeed = 1.0f;
+        previousFacing = facing;
     }
 
     private void DetectTerrain()
@@ -250,7 +285,7 @@ public class PlayerController : MonoBehaviour, ILoggable
             Log.LogToConsole($"Hit: {hit.transform.name}");
         }
 
-        //If something was hit, return false, Move was unsuccesful.
+        //If something was hit, return false, Move was unsuccessful.
         return false;
     }
 
@@ -376,15 +411,23 @@ public class PlayerController : MonoBehaviour, ILoggable
     private IEnumerator Damaged(int damage = 0)
     {
         if (inDamageCooldown) yield break;
-        StartCoroutine(nameof(DamageCooldown));
+        inDamageCooldown = true;
+        //StartCoroutine(nameof(DamageCooldown));
         TakeDamage(damage);
 
         var color = spriteRenderer.color;
-        spriteRenderer.color = new Color(0.8018868f, 0.301258f, 0.2458615f, 1);
 
-        yield return new WaitForSeconds(0.25f);
+        spriteRenderer.color = new Color(0.8018868f, 0.301258f, 0.2458615f, 1);
+        yield return new WaitForSeconds(0.1f);
 
         spriteRenderer.color = color;
+        yield return new WaitForSeconds(0.1f);
+
+        spriteRenderer.color = new Color(0.8018868f, 0.301258f, 0.2458615f, 1);
+        yield return new WaitForSeconds(0.1f);
+
+        spriteRenderer.color = color;
+        inDamageCooldown = false;
     }
 
     private IEnumerator DamageCooldown()
@@ -442,13 +485,14 @@ public class PlayerController : MonoBehaviour, ILoggable
     public void TriggerSwordAttack()
     {
         isAttacking = true;
-        EventBus.instance.TriggerEvent(GameEvent.PlayerAttack, new EventMessage { Payload = spriteRenderer.flipX ? "Left" : "Right" });
+        EventBus.instance.TriggerEvent(GameEvent.PlayerAttack, new EventMessage { Payload = facing });
+        animator.SetFloat("Facing", (float)facing);
     }
 
     public void TriggerSwordAttackEnd()
     {
-        isAttacking = false;
         EventBus.instance.TriggerEvent(GameEvent.PlayerAttackEnded, new EventMessage());
+        isAttacking = false;
     }
 
     private void PlayerHit(EventMessage message)
