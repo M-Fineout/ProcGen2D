@@ -9,6 +9,8 @@ namespace Assets.Code.Util
     {
         public static Container instance;
         private EventBus EventBus { get; set; }
+        private GameLogConfiguration GameLogConfiguration { get; set; }
+        public MovementConductor MovementConductor { get; set; }
 
         public static void Build()
         {
@@ -24,6 +26,8 @@ namespace Assets.Code.Util
         private void Fill()
         {
             EventBus = new EventBus();
+            GameLogConfiguration = new GameLogConfiguration();
+            MovementConductor = new MovementConductor();
         }
     }
 }

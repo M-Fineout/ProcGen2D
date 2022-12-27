@@ -30,6 +30,7 @@ public class BoardManager : MonoBehaviour
     public GameObject spikes;
     public GameObject lava;
     public GameObject hiddenButton;
+    public GameObject needler;
 
     //Special
     public GameObject ice;
@@ -44,6 +45,7 @@ public class BoardManager : MonoBehaviour
     public GameObject medusa;
     public GameObject jelly;
     public GameObject beholder;
+    public GameObject trash;
 
     private int boardWidth = 24;
     private int boardLength = 24;
@@ -62,7 +64,7 @@ public class BoardManager : MonoBehaviour
     {
         //Debug.Log($"BoardManager created {this.GetHashCode()}");
         RegisterEvents();
-        enemies = new List<GameObject> { wizard, cyclops, medusa, jelly, beholder };
+        enemies = new List<GameObject> { wizard, cyclops, medusa, jelly, beholder, trash };
 
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
     }                       
@@ -98,28 +100,28 @@ public class BoardManager : MonoBehaviour
 
         SetupFloor();
         SetupWalls();
+
         //SetupObstructionsBoxWithDoor();
-        SetupObstructionsConeMaze();
-        SetupExit();
-        //SetupTraps();
+        //SetupObstructionsConeMaze();
+
+        //SetupExit();
+        SetupTraps();
         SetupPlayer();
-        //SetupSpecialTiles();
-        //SetupEnemiesTesting(medusa);
+        SetupSpecialTiles();
         //SetupEnemiesTesting(wizard);
-        //SetupEnemiesTesting(cyclops);
         SetupEnemiesTesting(jelly);
         //SetupEnemiesTesting(beholder);
+        //SetupEnemiesTesting(trash);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
-        var enemySpaces = BoardMap.Where(x => x.Value == cyclops).Select(x => x.Key).ToList();
+        var enemySpaces = BoardMap.Where(x => x.Value == jelly).Select(x => x.Key).ToList();
 
         EmptyTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         WallTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 1));
-        //Add cyclops static location to blueprints for testing
-        //Blueprints.Add(new Vector2(2.56f, 3.04f), 0);
-        //Blueprints.Add(new Vector2(0.32f, 2.72f), 0);
+
+        //Physics.bounceThreshold = .0001f;
     }
 
     private bool IsWall(GameObject gameObject)
@@ -209,18 +211,20 @@ public class BoardManager : MonoBehaviour
 
     private void SetupTraps()
     {
-        AddToBoard(2, 3, spikes);
+        //AddToBoard(2, 3, spikes);
 
-        AddToBoard(5, 4, lava);
-        AddToBoard(5, 5, lava);
-        AddToBoard(5, 6, lava);
+        //AddToBoard(5, 4, lava);
+        //AddToBoard(5, 5, lava);
+        //AddToBoard(5, 6, lava);
 
-        AddToBoard(7, 4, hiddenButton);
+        //AddToBoard(7, 4, hiddenButton);
+
+        //AddToBoard(5, 5, needler);
     }
 
     private void SetupPlayer()
     {
-        AddToBoard(1, 2, player);
+        AddToBoard(1, 1, player);
     }
 
     private void SetupSpecialTiles()
@@ -280,8 +284,8 @@ public class BoardManager : MonoBehaviour
             //AddToBoard(8, 3, enemy);
             AddToBoard(8, 2, enemy);
             AddToBoard(3, 5, enemy);
-            AddToBoard(3, 6, enemy);
-            AddToBoard(3, 7, enemy);
+            //AddToBoard(3, 6, enemy);
+            //AddToBoard(3, 7, enemy);
             //AddToBoard(4, 8, enemy);
             //AddToBoard(4, 9, enemy);
             //AddToBoard(4, 10, enemy);
@@ -324,12 +328,81 @@ public class BoardManager : MonoBehaviour
         if (enemy == beholder)
         {
             AddToBoard(16, 19, enemy);
+            //AddToBoard(6, 11, enemy);
+            //AddToBoard(2, 15, enemy);
+            AddToBoard(1, 17, enemy);
+            //AddToBoard(9, 12, enemy);
+            //AddToBoard(8, 2, enemy);
+            //AddToBoard(10, 6, enemy);
+            //AddToBoard(3, 6, enemy);
+            //AddToBoard(3, 7, enemy);
             //AddToBoard(2, 17, enemy);
+
+            //AddToBoard(16, 20, enemy);
+            //AddToBoard(3, 18, enemy);
+            //AddToBoard(6, 12, enemy);
+            //AddToBoard(6, 2, enemy);
+            //AddToBoard(2, 19, enemy);
+            //AddToBoard(1, 15, enemy);
+            //AddToBoard(9, 15, enemy);
+
+            //AddToBoard(15, 21, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(7, 15, enemy);
         }
 
         if (enemy == jelly)
         {
-            AddToBoard(5, 11, enemy);
+            //Adds enemies to the top half of the board
+            for (var x = 1; x < boardWidth - 1; x++)
+            {
+                for (var y = 15; y < boardLength - 1; y++)
+                {
+                    AddToBoard(x, y, enemy);
+                }
+            }
+
+            //AddToBoard(5, 11, enemy);
+            //AddToBoard(7, 15, enemy);
+            //AddToBoard(15, 21, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(4, 9, enemy);
+            ////AddToBoard(4, 10, enemy);
+            ////AddToBoard(4, 11, enemy);
+            ////AddToBoard(4, 12, enemy);
+            //AddToBoard(5, 9, enemy);
+            //AddToBoard(5, 10, enemy);
+            //AddToBoard(5, 11, enemy);
+            //AddToBoard(2, 12, enemy);
+            //AddToBoard(16, 20, enemy);
+            //AddToBoard(3, 18, enemy);
+            //AddToBoard(6, 12, enemy);
+            //AddToBoard(6, 2, enemy);
+            //AddToBoard(2, 19, enemy);
+            //AddToBoard(1, 15, enemy);
+            //AddToBoard(9, 15, enemy);
+
+            //AddToBoard(15, 21, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(7, 15, enemy);
+        }
+
+        if (enemy == trash)
+        {
+            AddToBoard(11, 11, enemy);
+            AddToBoard(9, 15, enemy);
         }
     }
 
@@ -357,12 +430,6 @@ public class BoardManager : MonoBehaviour
             BoardMap[mapPos] = toInstantiate;
         }
 
-        //else if (toInstantiate != wizard) //FOR TESTING TODO: REMOVE THIS
-        //{
-        //    BoardMap[mapPos] = toInstantiate;
-        //}
-
-        
         //Add to total enemy count
         if (enemies.Contains(toInstantiate))
         {

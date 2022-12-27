@@ -97,12 +97,12 @@ namespace Assets.Scripts.Enemies
 
         private bool ValidateEmptySpace(Vector2 candidate)
         {        
-            //Debug.Log($"Received space: x:{candidate.x}, y:{candidate.y}");
+            //Log.LogToConsole($"Received space: x:{candidate.x}, y:{candidate.y}");
             var hit = Physics2D.Raycast(candidate, Vector2.zero);
             if (hit.collider != null)
             {
                 return false;
-                //Debug.Log($"Hit {hit.collider.transform.name}");
+                //Log.LogToConsole($"Hit {hit.collider.transform.name}");
             }
             else
             {

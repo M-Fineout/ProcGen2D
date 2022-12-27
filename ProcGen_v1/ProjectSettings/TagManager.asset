@@ -12,6 +12,7 @@ TagManager:
   - WizardBlast_1
   - Enemy
   - Exit
+  - TrashGas
   layers:
   - Default
   - TransparentFX
@@ -19,8 +20,8 @@ TagManager:
   - SpecialTile
   - Water
   - UI
-  - 
-  - 
+  - BlockingLayer
+  - Player
   - 
   - 
   - 

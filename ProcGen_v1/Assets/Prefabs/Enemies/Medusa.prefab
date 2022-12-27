@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 6008031610718196126}
   - component: {fileID: 2442320708545480784}
   - component: {fileID: -5985013860377300483}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Medusa
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -76,7 +76,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 804362127
-  m_SortingLayer: 3
+  m_SortingLayer: 4
   m_SortingOrder: 0
   m_Sprite: {fileID: -833387395, guid: 7489af79c4c963b4b9bf49a578c6c001, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -145,7 +145,7 @@ Rigidbody2D:
   m_GameObject: {fileID: 8255689643707360395}
   m_BodyType: 1
   m_Simulated: 1
-  m_UseFullKinematicContacts: 0
+  m_UseFullKinematicContacts: 1
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0

@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2884835482687623563}
   - component: {fileID: 4193418337847711135}
   - component: {fileID: -7413136704357112586}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Beholder
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -145,7 +145,7 @@ Rigidbody2D:
   m_GameObject: {fileID: 566864987846719681}
   m_BodyType: 1
   m_Simulated: 1
-  m_UseFullKinematicContacts: 0
+  m_UseFullKinematicContacts: 1
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0
@@ -169,7 +169,7 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.000000029802322, y: -0.0025902092}
+  m_Offset: {x: -0.00047293305, y: -0.00069874525}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -180,7 +180,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.16, y: 0.16}
+  m_Size: {x: 0.14581376, y: 0.14297652}
   m_EdgeRadius: 0
 --- !u!114 &-7413136704357112586
 MonoBehaviour:
@@ -194,8 +194,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad8d21cfc98da294c9f4afe35f7ec0b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  facing: -1
   HashCode: 0
-  previousMoveDirection: {x: 0, y: 0}
-  inPursuit: 0
-  isAttacking: 0
+  facing: -1
+  moveTime: 0.2

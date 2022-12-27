@@ -1,4 +1,5 @@
-﻿using Assets.Code.Util;
+﻿using Assets.Code.Global;
+using Assets.Code.Util;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,25 +10,22 @@ using UnityEngine;
 
 namespace Assets.Scripts.Enemies
 {
-    public class Jelly : AStarEnemy
+    public class Jelly : AStarEnemyNew
     {
         private int attackDamage = 1;
         private float attackDistance = 0.16f;
-        protected override float moveSpeed { get; set; } = 8f;
+        //protected override float moveSpeed { get; set; } = 8f;
 
         protected override void Attack()
         {
-            feetCollider.enabled = false;
+            solidCollider.enabled = false;
             anim.SetBool("isAttacking", true);
-            //anim
-            //swing, batter batter
-            Debug.Log("Attacking player");
-            //StartCoroutine(nameof(AttackRoutine));
+            Log.LogToConsole("Attacking player");
         }
 
         public override void AttackFinished()
         {
-            feetCollider.enabled = true;
+            solidCollider.enabled = true;
             base.AttackFinished();
         }
 
@@ -51,7 +49,7 @@ namespace Assets.Scripts.Enemies
                     return spriteRenderer.flipX ? Vector2.left : Vector2.right;
                 default:
                     {
-                        Debug.Log($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
+                        Log.LogToConsole($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");
                         return Vector2.zero;
                     }
             }
@@ -59,20 +57,51 @@ namespace Assets.Scripts.Enemies
 
         private void OnTriggerEnter2D(Collider2D collision)
         {
-            if (isAttacking) //We have engulfed player
+            if (isAttacking && collision.gameObject == player && collision.gameObject.GetComponent<PlayerController>().isVulnerable) //We have engulfed player
             {
+                Log.LogToConsole("Absorbed player");
                 StartCoroutine(nameof(Cooldown));
                 //SetAnim = player inside
-                //AttackFinished();
-                //Set Cooldown
             }
-            Debug.Log($"collided with {collision.gameObject.name}");
+
+            Log.LogToConsole($"collided with {collision.gameObject.name}");
         }
 
         private IEnumerator Cooldown()
         {
             canAttack = false;
             ResetTravelPlans();
+            yield return new WaitForSeconds(3);
+            yield return SpitOutPlayer();
+        }
+
+        private IEnumerator SpitOutPlayer()
+        {
+            while (true)
+            {
+                if (lastPositions.Count <= 1)
+                {
+                    yield return new WaitForFixedUpdate();
+                }
+                else
+                {
+                    Log.LogToConsole($"Searching for drop zone");
+                    //We want the second to last position, since the absolute last one is the space we are currently residing on when in-between moves
+                    var lastPosVisited = lastPositions.Skip(lastPositions.Count - 2).First(); 
+                    var hit = Physics2D.Raycast(lastPosVisited, Vector2.zero);
+                    if (hit.collider != null)
+                    {
+                        //We can drop the player here
+                        EventBus.instance.TriggerEvent(GameEvent.PlayerDropped, new EventMessage { Payload = lastPosVisited });
+                        break;
+                    }
+                    else
+                    {
+                        yield return new WaitForSeconds(0.25f);
+                    }
+                }
+            }
+
             yield return new WaitForSeconds(3);
             canAttack = true;
         }
