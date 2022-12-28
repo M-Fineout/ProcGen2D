@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Assets.Code.Helper
 {
-    public class AStarWorker : ILoggable
+    public class AStarWorker : ILoggable, IEventUser
     {
         private ILoggable Log => this;
 
@@ -44,6 +44,7 @@ namespace Assets.Code.Helper
 
         public int InstanceId { get; set; }
         public Type Type { get; set; }
+        public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
 
         public AStarWorker(GameObject client, int pathLength, float feetPosOffset = 0)
         {
@@ -80,8 +81,7 @@ namespace Assets.Code.Helper
 
         private void Prime()
         {
-            EventBus.instance.RegisterCallback(GameEvent.EmptyTilesFound, EmptyTilesReceived);
-            EventBus.instance.RegisterCallback(GameEvent.BlueprintsOutgoing, BlueprintsReceived);
+            RegisterEvents();
             EventBus.instance.TriggerEvent(GameEvent.EmptyTilesRequested, new EventMessage());
             EventBus.instance.TriggerEvent(GameEvent.BlueprintsRequested, new EventMessage());
 
@@ -380,6 +380,22 @@ namespace Assets.Code.Helper
             for (var i = 0; i < closed.Count; i++)
             {
                 Debug.DrawLine(closed[i].location, new Vector2(closed[i].location.x + .04f, closed[i].location.y + .04f), Color.green, 0.2f);
+            }
+        }
+
+        public void RegisterEvents()
+        {
+            Registrations.Add(GameEvent.EmptyTilesFound, EmptyTilesReceived);
+            Registrations.Add(GameEvent.BlueprintsOutgoing, BlueprintsReceived);
+            EventBus.instance.RegisterCallback(GameEvent.EmptyTilesFound, EmptyTilesReceived);
+            EventBus.instance.RegisterCallback(GameEvent.BlueprintsOutgoing, BlueprintsReceived);
+        }
+
+        public void UnregisterEvents()
+        {
+            foreach (var registry in Registrations)
+            {
+                EventBus.instance.UnregisterCallback(registry.Key, registry.Value);
             }
         }
     }

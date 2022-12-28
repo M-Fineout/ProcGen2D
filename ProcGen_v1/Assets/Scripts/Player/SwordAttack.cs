@@ -1,6 +1,9 @@
 ﻿using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using Assets.Scripts.Enemies;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Scripts.Player
@@ -9,7 +12,7 @@ namespace Assets.Scripts.Player
     /// Detached form of attack collider. Rather than updating the collider dynamically in the animation,
     /// We move the collider position within this script to match the direction the player is facing.
     /// </summary>
-    public class SwordAttack : MonoBehaviour
+    public class SwordAttack : MonoBehaviour, IEventUser
     {
         Vector2 rightAttackOffset;
         Vector2 downAttackOffset;
@@ -17,10 +20,11 @@ namespace Assets.Scripts.Player
         int damage = 1;
         bool attacking;
 
+        public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
+
         private void Start()
         {
-            EventBus.instance.RegisterCallback(GameEvent.PlayerAttack, Attack);
-            EventBus.instance.RegisterCallback(GameEvent.PlayerAttackEnded, StopAttack);
+            RegisterEvents();
 
             swordCollider = GetComponent<Collider2D>();
             rightAttackOffset = transform.localPosition; //SwordAttack is set to attack right by default
@@ -84,9 +88,20 @@ namespace Assets.Scripts.Player
 
         private void OnDestroy()
         {
+            UnregisterEvents();
+            Debug.Log("Sword Destroyed");
+        }
+
+        public void RegisterEvents()
+        {
+            EventBus.instance.RegisterCallback(GameEvent.PlayerAttack, Attack);
+            EventBus.instance.RegisterCallback(GameEvent.PlayerAttackEnded, StopAttack);
+        }
+
+        public void UnregisterEvents()
+        {
             EventBus.instance.UnregisterCallback(GameEvent.PlayerAttack, Attack);
             EventBus.instance.UnregisterCallback(GameEvent.PlayerAttackEnded, StopAttack);
-            Debug.Log("Sword Destroyed");
         }
     }
 }

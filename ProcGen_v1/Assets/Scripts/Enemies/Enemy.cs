@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.Enemies
 {
-    public class Enemy : MonoBehaviour, ILoggable
+    public class Enemy : MonoBehaviour, ILoggable, IEventUser
     {
         protected ILoggable Log => this;
         protected virtual int Health { get; set; }
@@ -20,10 +20,9 @@ namespace Assets.Scripts.Enemies
         protected int TicketNumber { get; private set; }
         [field: SerializeField]
         protected int CurrentTurn { get; private set; }
+        public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
 
         protected SpriteRenderer spriteRenderer;
-
-        protected Dictionary<GameEvent, Action<EventMessage>> Registrations = new();
 
         private bool takingDamage;
 
@@ -37,9 +36,8 @@ namespace Assets.Scripts.Enemies
             InstanceId = GetInstanceID();
             Type = GetType(); //For now, we will let everything fall under the Enemy umbrella. Convert to more granular later on
             GameLogConfiguration.instance.Register(InstanceId, Type);
+            RegisterEvents();
 
-            EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
-            EventBus.instance.RegisterCallback(GameEvent.CurrentTurn, StoreCurrentTurn);
             EventBus.instance.TriggerEvent(GameEvent.TicketRequested, new EventMessage { Payload = InstanceId });
         }
 
@@ -90,18 +88,25 @@ namespace Assets.Scripts.Enemies
             takingDamage = false;
         }
 
-        protected virtual void Unregister()
+        private void OnDestroy()
+        {
+            UnregisterEvents();
+        }
+
+        public void RegisterEvents()
+        {
+            Registrations.Add(GameEvent.TicketFulfilled, StoreTicketNumber);
+            Registrations.Add(GameEvent.CurrentTurn, StoreCurrentTurn);
+            EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
+            EventBus.instance.RegisterCallback(GameEvent.CurrentTurn, StoreCurrentTurn);
+        }
+
+        public void UnregisterEvents()
         {
             foreach (var registry in Registrations)
             {
                 EventBus.instance.UnregisterCallback(registry.Key, registry.Value);
             }
         }
-
-        private void OnDestroy()
-        {
-            Unregister();
-        }
-        //protected virtual void Register() --PH for if we will have events that ALL inheriters will need
     }
 }

@@ -1,4 +1,5 @@
 using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Random = UnityEngine.Random;
 
-public class BoardManager : MonoBehaviour
+public class BoardManager : MonoBehaviour, IEventUser
 {
     private const float TILE_SIZE = 0.16f;
 
@@ -43,8 +44,10 @@ public class BoardManager : MonoBehaviour
     private Dictionary<Vector2, int> Blueprints = new();
                
     private List<GameObject> enemies;           
-    public int enemyCount;                     
-                                               
+    public int enemyCount;
+
+    public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
+
     void Start()
     {
         RegisterEvents();
@@ -52,28 +55,6 @@ public class BoardManager : MonoBehaviour
 
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
     }                       
-                                            
-    private void RegisterEvents()               
-    {                                           
-        EventBus.instance.RegisterCallback(GameEvent.SceneLoaded, SetupScene);
-        EventBus.instance.RegisterCallback(GameEvent.EmptyTilesRequested, EmptyTilesRequest);
-        EventBus.instance.RegisterCallback(GameEvent.WallTilesRequested, WallTilesRequest);
-        EventBus.instance.RegisterCallback(GameEvent.EnemyDefeated, EnemyDefeated);
-        EventBus.instance.RegisterCallback(GameEvent.LevelCompleted, Dispose);
-        EventBus.instance.RegisterCallback(GameEvent.BlueprintsRequested, BlueprintsRequest);
-    }
-
-    private void Dispose(EventMessage message)
-    {
-        EventBus.instance.UnregisterCallback(GameEvent.SceneLoaded, SetupScene);
-        EventBus.instance.UnregisterCallback(GameEvent.EmptyTilesRequested, EmptyTilesRequest);
-        EventBus.instance.UnregisterCallback(GameEvent.WallTilesRequested, WallTilesRequest);
-        EventBus.instance.UnregisterCallback(GameEvent.BlueprintsRequested, BlueprintsRequest);
-        EventBus.instance.UnregisterCallback(GameEvent.EnemyDefeated, EnemyDefeated);
-        EventBus.instance.UnregisterCallback(GameEvent.LevelCompleted, Dispose);
-
-        Destroy(gameObject);
-    }
 
     #region Build
 
@@ -236,17 +217,17 @@ public class BoardManager : MonoBehaviour
             //AddToBoard(5, 11, enemy);
             AddToBoard(7, 15, enemy);
             AddToBoard(15, 21, enemy);
-            AddToBoard(13, 18, enemy);
-            AddToBoard(3, 12, enemy);
-            AddToBoard(4, 2, enemy);
-            AddToBoard(11, 19, enemy);
-            AddToBoard(14, 18, enemy);
-            AddToBoard(4, 9, enemy);
-            AddToBoard(5, 9, enemy);
-            AddToBoard(5, 10, enemy);
-            AddToBoard(5, 11, enemy);
-            AddToBoard(2, 12, enemy);
-            AddToBoard(16, 20, enemy);
+            //AddToBoard(13, 18, enemy);
+            //AddToBoard(3, 12, enemy);
+            //AddToBoard(4, 2, enemy);
+            //AddToBoard(11, 19, enemy);
+            //AddToBoard(14, 18, enemy);
+            //AddToBoard(4, 9, enemy);
+            //AddToBoard(5, 9, enemy);
+            //AddToBoard(5, 10, enemy);
+            //AddToBoard(5, 11, enemy);
+            //AddToBoard(2, 12, enemy);
+            //AddToBoard(16, 20, enemy);
             //AddToBoard(3, 18, enemy);
             //AddToBoard(6, 12, enemy);
             //AddToBoard(6, 2, enemy);
@@ -328,4 +309,32 @@ public class BoardManager : MonoBehaviour
         Debug.Log($" {GetHashCode()} Sent Blueprints");
     }
 
+    private void Dispose(EventMessage message)
+    {
+        UnregisterEvents();
+        Destroy(gameObject);
+    }
+
+    public void RegisterEvents()
+    {
+        Registrations.Add(GameEvent.SceneLoaded, SetupScene);
+        Registrations.Add(GameEvent.EmptyTilesRequested, EmptyTilesRequest);
+        Registrations.Add(GameEvent.WallTilesRequested, WallTilesRequest);
+        Registrations.Add(GameEvent.EnemyDefeated, EnemyDefeated);
+        Registrations.Add(GameEvent.LevelCompleted, Dispose);
+        Registrations.Add(GameEvent.BlueprintsRequested, BlueprintsRequest);
+
+        foreach (var registry in Registrations)
+        {
+            EventBus.instance.RegisterCallback(registry.Key, registry.Value);
+        }
+    }
+
+    public void UnregisterEvents()
+    {
+        foreach (var registry in Registrations)
+        {
+            EventBus.instance.UnregisterCallback(registry.Key, registry.Value);
+        }
+    }
 }

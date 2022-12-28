@@ -1,14 +1,16 @@
 using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using Logger = Assets.Code.Util.Logger;
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviour, IEventUser
 {
     //Static instance of GameManager which allows it to be accessed by any other script.
     public static GameManager instance = null;
@@ -16,18 +18,19 @@ public class GameManager : MonoBehaviour
     private bool initialized;
     private bool isSingleton => instance == this;
 
+    public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
+
     private void Awake()
     {  
         InstantiateSingleton();
         if (isSingleton)
         {
             BuildContainer();
+
             //Sets this to not be destroyed when reloading scene
             DontDestroyOnLoad(gameObject);
 
-            EventBus.instance.RegisterCallback(GameEvent.LevelCompleted, LevelComplete);
-            EventBus.instance.RegisterCallback(GameEvent.HeartBeating, Initialize);
-            EventBus.instance.RegisterCallback(GameEvent.PlayerDefeated, PlayerKilled);
+            RegisterEvents();
         }      
     }
 
@@ -74,8 +77,29 @@ public class GameManager : MonoBehaviour
 
         //End game if lives are out
         Debug.Log("Game Over!");
+        UnregisterEvents();
+
         Time.timeScale = 0;
         enabled = false;
+    }
+
+    public void RegisterEvents()
+    {
+        Registrations.Add(GameEvent.LevelCompleted, LevelComplete);
+        Registrations.Add(GameEvent.HeartBeating, Initialize);
+        Registrations.Add(GameEvent.PlayerDefeated, PlayerKilled);
+
+        EventBus.instance.RegisterCallback(GameEvent.LevelCompleted, LevelComplete);
+        EventBus.instance.RegisterCallback(GameEvent.HeartBeating, Initialize);
+        EventBus.instance.RegisterCallback(GameEvent.PlayerDefeated, PlayerKilled);
+    }
+
+    public void UnregisterEvents()
+    {
+        foreach (var registry in Registrations)
+        {
+            EventBus.instance.UnregisterCallback(registry.Key, registry.Value);
+        }
     }
 
     ////this is called only once, and the parameter tell it to be called only after the scene was loaded

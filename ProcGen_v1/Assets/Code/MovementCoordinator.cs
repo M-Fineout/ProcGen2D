@@ -1,11 +1,12 @@
 ﻿using Assets.Code.Global;
+using Assets.Code.Interface;
 using Assets.Code.Util;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Assets.Code
 {
-    public class MovementCoordinator
+    public class MovementCoordinator: IEventUser
     {
         private object countLock = new();
         private object currentLock = new();
@@ -17,13 +18,12 @@ namespace Assets.Code
         private LinkedList<int> tickets;
 
         private bool rolling;
-  
+
+        public Dictionary<GameEvent, System.Action<EventMessage>> Registrations { get; set; } = new();
+
         public MovementCoordinator()
         {
-            EventBus.instance.RegisterCallback(GameEvent.SceneLoaded, Initialize);
-            EventBus.instance.RegisterCallback(GameEvent.TicketRequested, TicketRequested);
-            EventBus.instance.RegisterCallback(GameEvent.TurnFinished, Roll);
-            EventBus.instance.RegisterCallback(GameEvent.EnemyDefeated, TicketExpired);
+            RegisterEvents();
         }
 
         private void TicketExpired(EventMessage obj)
@@ -97,5 +97,25 @@ namespace Assets.Code
             }
         }
 
+        public void RegisterEvents()
+        {
+            Registrations.Add(GameEvent.SceneLoaded, Initialize);
+            Registrations.Add(GameEvent.TicketRequested, TicketRequested);
+            Registrations.Add(GameEvent.TurnFinished, Roll);
+            Registrations.Add(GameEvent.EnemyDefeated, TicketExpired);
+
+            EventBus.instance.RegisterCallback(GameEvent.SceneLoaded, Initialize);
+            EventBus.instance.RegisterCallback(GameEvent.TicketRequested, TicketRequested);
+            EventBus.instance.RegisterCallback(GameEvent.TurnFinished, Roll);
+            EventBus.instance.RegisterCallback(GameEvent.EnemyDefeated, TicketExpired);
+        }
+
+        public void UnregisterEvents()
+        {
+            foreach (var registry in Registrations)
+            {
+                EventBus.instance.UnregisterCallback(registry.Key, registry.Value);
+            }
+        }
     }
 }

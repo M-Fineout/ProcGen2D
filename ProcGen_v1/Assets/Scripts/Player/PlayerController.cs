@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour, ILoggable
+public class PlayerController : MonoBehaviour, ILoggable, IEventUser
 {
     private ILoggable Log => this;
     private float health = 3f;
@@ -61,6 +61,7 @@ public class PlayerController : MonoBehaviour, ILoggable
     protected int TicketNumber { get; private set; }
     public int InstanceId { get; set; }
     public System.Type Type { get; set; }
+    public Dictionary<GameEvent, System.Action<EventMessage>> Registrations { get; set; } = new();
 
     // Start is called before the first frame update
     void Start()
@@ -74,9 +75,7 @@ public class PlayerController : MonoBehaviour, ILoggable
         boxCollider = boxColliders.First(x => !x.isTrigger);
         triggerCollider = boxColliders.First(x => x.isTrigger);
 
-        EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
-        EventBus.instance.RegisterCallback(GameEvent.PlayerDropped, PlayerDropped);
-        EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
+        RegisterEvents();
 
         InstanceId = GetInstanceID();
         Type = GetType();
@@ -524,13 +523,32 @@ public class PlayerController : MonoBehaviour, ILoggable
 
     private void OnDestroy()
     {
+        UnregisterEvents();
         EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = TicketNumber });
-        EventBus.instance.UnregisterCallback(GameEvent.PlayerHit, PlayerHit);
     }
 
     private void OnCollisionStay2D(Collision2D collision)
     {
         transform.position = lastPos;
         Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
+    }
+
+    public void RegisterEvents()
+    {
+        Registrations.Add(GameEvent.PlayerHit, PlayerHit);
+        Registrations.Add(GameEvent.PlayerDropped, PlayerDropped);
+        Registrations.Add(GameEvent.TicketFulfilled, StoreTicketNumber);
+
+        EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
+        EventBus.instance.RegisterCallback(GameEvent.PlayerDropped, PlayerDropped);
+        EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
+    }
+
+    public void UnregisterEvents()
+    {
+        foreach (var registry in Registrations)
+        {
+            EventBus.instance.UnregisterCallback(registry.Key, registry.Value);
+        }
     }
 }
