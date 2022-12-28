@@ -27,7 +27,7 @@ namespace Assets.Code.Util
 
             //TypeConfigurations.Add(typeof(PlayerController), true);
             //TypeConfigurations.Add(typeof(Enemy), true);
-            TypeConfigurations.Add(typeof(AStarWorker), true);
+            //TypeConfigurations.Add(typeof(AStarWorker), true);
         }
 
         /// <summary>

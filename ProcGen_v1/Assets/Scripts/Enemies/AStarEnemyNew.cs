@@ -18,7 +18,7 @@ namespace Assets.Scripts.Enemies
         protected override int Health { get; set; } = 3;
 
         private const int pathLength = 6;
-        private const float feetPositionOffset = 0; //6 for cyclops (and likely medusa) //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
+        private const float feetPositionOffset = 0; //The offset in the y coordinate from transform.position. (transform.position gives us the center of an object)
 
         //We should move these to the enemy class
         protected GameObject player;
@@ -27,7 +27,7 @@ namespace Assets.Scripts.Enemies
         private BoxCollider2D triggerCollider;
         protected Animator anim;
         [SerializeField] private int HashCode; //Leaving in as this will be very helpful for logging when we handle the logging issue.
-        public int facing = -1; //TODO: Convert to Enum
+        public Facing facing; 
 
         //movement dependencies
         private AStarWorker worker;
@@ -47,6 +47,8 @@ namespace Assets.Scripts.Enemies
         private bool isMoving;
         private bool readyToMove;
         protected bool canAttack = true; //When set to false, should always remain in the patrol state
+        float moveX;
+        float moveY;
 
         //Move Refactor vars
         public float moveTime = 0.2f;           //Time it will take object to move, in seconds.
@@ -171,13 +173,14 @@ namespace Assets.Scripts.Enemies
             state = State.Patrol;
             Debug.Log("Attack finished");
             isAttacking = false;
-            anim.SetBool("isAttacking", isAttacking);           
+            //anim.SetBool("isAttacking", isAttacking);           
         }
 
         protected virtual void Attack()
         {
             isAttacking = true;
-            anim.SetBool("isAttacking", isAttacking);
+            anim.SetTrigger("Attack");
+            //anim.SetBool("isAttacking", isAttacking);
             Log.LogToConsole("Attacking player");
         }
 
@@ -278,15 +281,19 @@ namespace Assets.Scripts.Enemies
             var normal = (end - (Vector2)transform.position).normalized;
             if (Mathf.Round(normal.x) == 0)
             {
-                facing = (int)Mathf.Round(normal.y); //Anim matches the cardinality (up = 1, down = -1)
+                moveY = (int)Mathf.Round(normal.y);
+                facing = moveY >= 0 ? Facing.Up : Facing.Down;
             }
             else
             {
-                facing = 2;
-                spriteRenderer.flipX = normal.x < 0;
+                moveX = normal.x;
+                facing = moveX > 0 ? Facing.Right : Facing.Left;
             }
 
-            anim.SetInteger("facing", facing);
+            anim.SetFloat("Facing", (float)facing);
+            anim.SetBool("isMoving", isMoving);
+            anim.SetFloat("Horizontal", moveX);
+            anim.SetFloat("Vertical", moveY);
         }
 
         private void RequestRoute()
@@ -354,12 +361,14 @@ namespace Assets.Scripts.Enemies
         {
             switch (facing)
             {
-                case 1:
+                case Facing.Up:
                     return Vector2.up;
-                case -1:
+                case Facing.Down:
                     return Vector2.down;
-                case 2:
-                    return spriteRenderer.flipX ? Vector2.left : Vector2.right;
+                case Facing.Right:
+                    return Vector2.right;
+                case Facing.Left:
+                    return Vector2.left;
                 default:
                     {
                         Log.LogToConsole($"{nameof(GetFacingVector)} returned facing = {facing}. Error!");

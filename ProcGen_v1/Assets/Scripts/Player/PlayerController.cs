@@ -57,6 +57,8 @@ public class PlayerController : MonoBehaviour, ILoggable
     private Facing previousFacing;
     private float momentum;
 
+    [field: SerializeField]
+    protected int TicketNumber { get; private set; }
     public int InstanceId { get; set; }
     public System.Type Type { get; set; }
 
@@ -74,6 +76,7 @@ public class PlayerController : MonoBehaviour, ILoggable
 
         EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
         EventBus.instance.RegisterCallback(GameEvent.PlayerDropped, PlayerDropped);
+        EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
 
         InstanceId = GetInstanceID();
         Type = GetType();
@@ -81,16 +84,22 @@ public class PlayerController : MonoBehaviour, ILoggable
 
         inverseMoveTime = 1 / moveTime;
         layerMask = LayerMask.GetMask(new string[] { "BlockingLayer" });
+        EventBus.instance.TriggerEvent(GameEvent.TicketRequested, new EventMessage { Payload = InstanceId });
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (isAttacking || isMoving || !canMove) return;
+        if (TicketNumber != Container.instance.MovementConductor.current) return;
+        if (isAttacking || isMoving || !canMove)
+        {
+            EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
+            return;
+        }
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            animator.SetTrigger("swordAttack");
+            animator.SetTrigger("Attack");
         }
 
         //if (isAttacking) return;
@@ -115,6 +124,7 @@ public class PlayerController : MonoBehaviour, ILoggable
             moveY = -moveY;
         }
         moveDirection = new Vector2(moveX, moveY);
+        EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
     }
 
     private void FixedUpdate()
@@ -145,11 +155,18 @@ public class PlayerController : MonoBehaviour, ILoggable
                 isMoving = false;
                 sqrRemainingDistance = 0;
                 end = Vector2.zero;
-                //StartCoroutine(nameof(MoveCooldown));
+                StartCoroutine(nameof(MoveCooldown));
             }
         }        
     }
 
+    private void StoreTicketNumber(EventMessage obj)
+    {
+        var payload = ((int, int))obj.Payload;
+        if (payload.Item1 != InstanceId) return;
+
+        TicketNumber = payload.Item2;
+    }
     private IEnumerator MoveCooldown()
     {
         inMoveCooldown = true;
@@ -340,10 +357,6 @@ public class PlayerController : MonoBehaviour, ILoggable
             //AttemptMoveInvoluntary(direction);
             //rb.MovePosition(rb.position + new Vector2(direction.x, direction.y));
         }
-        else if (collision.CompareTag("Lava"))
-        {
-            StartCoroutine(nameof(Melt));
-        }
         else if (collision.CompareTag("HiddenButton"))
         {
             Debug.Log("Found hidden button!");            
@@ -367,21 +380,21 @@ public class PlayerController : MonoBehaviour, ILoggable
             var enemy = collision.GetComponent<Enemy>();
             switch (enemy)
             {
-                case Jelly jelly:
-                    {
-                        Log.LogToConsole("Hit by jelly, checking isAttacking");
-                        if (jelly.isAttacking && isVulnerable)
-                        {
-                            isVulnerable = false;
-                            Log.LogToConsole("Hit by Jelly, turning off components");
-                            spriteRenderer.enabled = false;
-                            canMove = false;
-                            boxCollider.enabled = false;
-                            //Need this so that jelly does not keep picking up player's trigger when trying to move after absorption
-                            triggerCollider.enabled = false; 
-                        }                   
-                    }
-                    break;
+                //case Jelly jelly:
+                //    {
+                //        Log.LogToConsole("Hit by jelly, checking isAttacking");
+                //        if (jelly.isAttacking && isVulnerable)
+                //        {
+                //            isVulnerable = false;
+                //            Log.LogToConsole("Hit by Jelly, turning off components");
+                //            spriteRenderer.enabled = false;
+                //            canMove = false;
+                //            boxCollider.enabled = false;
+                //            //Need this so that jelly does not keep picking up player's trigger when trying to move after absorption
+                //            triggerCollider.enabled = false; 
+                //        }                   
+                //    }
+                //    break;
             }
 
             Log.LogToConsole($"Collided with enemy: {collision.gameObject.name}");
@@ -397,11 +410,6 @@ public class PlayerController : MonoBehaviour, ILoggable
     {
         Log.LogToConsole("OnCollisionEnter2D");
 
-        if (collision.gameObject.CompareTag("Lava"))
-        {
-            Log.LogToConsole("Collided");
-            StartCoroutine(nameof(Melt));
-        }
         if (collision.gameObject.CompareTag(Tags.Enemy))
         {
             Log.LogToConsole("Collided with enemy");
@@ -437,16 +445,6 @@ public class PlayerController : MonoBehaviour, ILoggable
         inDamageCooldown = false;
     }
 
-    private IEnumerator Melt()
-    {
-        //TODO:
-        //Play melt anim
-        //GAMEOVER
-
-        //For debug
-        yield return Damaged();
-    }
-
     private IEnumerator Confused()
     {
         if (!isConfused)
@@ -455,31 +453,6 @@ public class PlayerController : MonoBehaviour, ILoggable
             yield return new WaitForSeconds(5);
             isConfused = false;
         }
-    }
-
-    private IEnumerator Stoned()
-    {
-        if (!isStoned)
-        {
-            //Kill any potential movement
-            moveDirection = Vector2.zero;
-
-            Log.LogToConsole("Stoned!");
-            var color = spriteRenderer.color;
-            //spriteRenderer.color = new Color(0.8274f, 0.8274f, 0.8274f, 1); //Should be grey
-            spriteRenderer.color = new Color(0.3480331f, 0.6378833f, 0.9339623f, 1);
-
-            animator.enabled = false;
-            isStoned = true;
-            canMove = false;
-            yield return new WaitForSeconds(2);
-            canMove = true;
-            isStoned = false;
-            animator.enabled = true;
-
-            spriteRenderer.color = color;
-        }
-
     }
 
     public void TriggerSwordAttack()
@@ -551,6 +524,7 @@ public class PlayerController : MonoBehaviour, ILoggable
 
     private void OnDestroy()
     {
+        EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = TicketNumber });
         EventBus.instance.UnregisterCallback(GameEvent.PlayerHit, PlayerHit);
     }
 

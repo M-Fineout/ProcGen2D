@@ -28,16 +28,17 @@ namespace Assets.Scripts.Enemies
             var pos = transform.position;
             switch (facing)
             {
-                //down
-                case -1:
+                case Facing.Down:
                     attackLocation = new Vector2(pos.x, pos.y - 0.16f);
                     break;
-                //up
-                case 1:
+                case Facing.Up:
                     attackLocation = new Vector2(pos.x, pos.y + 0.16f);
                     break;
-                case 2:
-                    attackLocation = spriteRenderer.flipX ? new Vector2(pos.x - 0.16f, pos.y) : new Vector2(pos.x + 0.16f, pos.y);
+                case Facing.Right:
+                    attackLocation = new Vector2(pos.x + 0.16f, pos.y);
+                    break;
+                case Facing.Left:
+                    attackLocation = new Vector2(pos.x - 0.16f, pos.y);
                     break;
             }
             Debug.Log("Attacking: " + attackLocation);

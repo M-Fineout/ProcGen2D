@@ -74,7 +74,7 @@ namespace Assets.Scripts.Enemies
         protected void Die()
         {            
             Destroy(gameObject);
-            EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = InstanceId });          
+            EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = TicketNumber });          
         }
 
         private IEnumerator Damaged()
