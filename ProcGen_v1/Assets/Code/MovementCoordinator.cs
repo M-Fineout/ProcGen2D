@@ -8,16 +8,16 @@ namespace Assets.Code
 {
     public class MovementCoordinator: IEventUser
     {
-        private object countLock = new();
-        private object currentLock = new();
-        private object ticketsLock = new();
+        private readonly object countLock = new();
+        private readonly object currentLock = new();
+        private readonly object ticketsLock = new();
 
         private int count;
         public int current;
         private LinkedListNode<int> currentNode;
         private LinkedList<int> tickets;
 
-        private bool rolling;
+        private bool callingTickets;
 
         public Dictionary<GameEvent, System.Action<EventMessage>> Registrations { get; set; } = new();
 
@@ -45,7 +45,7 @@ namespace Assets.Code
             }
         }
 
-        private void Roll(EventMessage obj)
+        private void CallNextTicket(EventMessage obj)
         {
             lock (currentLock)
             {
@@ -73,7 +73,7 @@ namespace Assets.Code
                 tickets = new();
             }
 
-            rolling = false;
+            callingTickets = false;
         }
 
         private void TicketRequested(EventMessage obj)
@@ -90,10 +90,10 @@ namespace Assets.Code
 
             EventBus.instance.TriggerEvent(GameEvent.TicketFulfilled, new EventMessage { Payload = ((int)obj.Payload, count) });
 
-            if (!rolling)
+            if (!callingTickets)
             {
-                Roll(new());
-                rolling = true;
+                CallNextTicket(new());
+                callingTickets = true;
             }
         }
 
@@ -101,12 +101,12 @@ namespace Assets.Code
         {
             Registrations.Add(GameEvent.SceneLoaded, Initialize);
             Registrations.Add(GameEvent.TicketRequested, TicketRequested);
-            Registrations.Add(GameEvent.TurnFinished, Roll);
+            Registrations.Add(GameEvent.TurnFinished, CallNextTicket);
             Registrations.Add(GameEvent.EnemyDefeated, TicketExpired);
 
             EventBus.instance.RegisterCallback(GameEvent.SceneLoaded, Initialize);
             EventBus.instance.RegisterCallback(GameEvent.TicketRequested, TicketRequested);
-            EventBus.instance.RegisterCallback(GameEvent.TurnFinished, Roll);
+            EventBus.instance.RegisterCallback(GameEvent.TurnFinished, CallNextTicket);
             EventBus.instance.RegisterCallback(GameEvent.EnemyDefeated, TicketExpired);
         }
 

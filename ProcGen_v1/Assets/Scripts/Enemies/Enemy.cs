@@ -18,8 +18,7 @@ namespace Assets.Scripts.Enemies
 
         [field: SerializeField]
         protected int TicketNumber { get; private set; }
-        [field: SerializeField]
-        protected int CurrentTurn { get; private set; }
+
         public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
 
         protected SpriteRenderer spriteRenderer;
@@ -40,12 +39,6 @@ namespace Assets.Scripts.Enemies
 
             EventBus.instance.TriggerEvent(GameEvent.TicketRequested, new EventMessage { Payload = InstanceId });
         }
-
-        private void StoreCurrentTurn(EventMessage obj)
-        {
-            CurrentTurn = (int)obj.Payload;
-        }
-
         private void StoreTicketNumber(EventMessage obj)
         {
             var payload = ((int, int))obj.Payload;
@@ -96,9 +89,7 @@ namespace Assets.Scripts.Enemies
         public void RegisterEvents()
         {
             Registrations.Add(GameEvent.TicketFulfilled, StoreTicketNumber);
-            Registrations.Add(GameEvent.CurrentTurn, StoreCurrentTurn);
             EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
-            EventBus.instance.RegisterCallback(GameEvent.CurrentTurn, StoreCurrentTurn);
         }
 
         public void UnregisterEvents()
