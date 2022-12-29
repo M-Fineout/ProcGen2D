@@ -9,12 +9,10 @@ AnimatorOverrideController:
   m_Name: Jelly_Physical_AI
   m_Controller: {fileID: 9100000, guid: 5a9c3313f931ebb438efcee6c2c368db, type: 2}
   m_Clips:
-  - m_OriginalClip: {fileID: 7400000, guid: a7f4f25b3d9b0514fb75870339c6cc6f, type: 2}
-    m_OverrideClip: {fileID: 7400000, guid: 32f959823a32afe47927c1ecdbb1ef6a, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: 55a2eca88b276c2449a4d4dc8e668e74, type: 2}
-    m_OverrideClip: {fileID: 7400000, guid: 32f959823a32afe47927c1ecdbb1ef6a, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 1aeb78e706d206448863b36bee61c905, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: 76014dc2ad7199f44810f13fbd6c09de, type: 2}
-    m_OverrideClip: {fileID: 7400000, guid: 32f959823a32afe47927c1ecdbb1ef6a, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 7640742f9c437d84fa25ce5e530a7fe6, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: a66ffdff93d2bed4cad9611bc104d72a, type: 2}
     m_OverrideClip: {fileID: 7400000, guid: 32f959823a32afe47927c1ecdbb1ef6a, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: 977137f944988464385053e1eb2abd19, type: 2}
@@ -26,7 +24,7 @@ AnimatorOverrideController:
   - m_OriginalClip: {fileID: 7400000, guid: ce7a3b7a9d0c4ba4cb6cfa2f4e78bf53, type: 2}
     m_OverrideClip: {fileID: 7400000, guid: 93c24106206f8d3499ab655dcebf3549, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: e87897f4e1750da4cbafb73c6215a39d, type: 2}
-    m_OverrideClip: {fileID: 7400000, guid: 32f959823a32afe47927c1ecdbb1ef6a, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 4be22ca11d43e994ea6ff1f0cfe446b8, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: 556e0bd0bb84fa1419d10dfd16cae7e4, type: 2}
     m_OverrideClip: {fileID: 7400000, guid: 6f10ea6b1c23e404faa7dda6baa5b6db, type: 2}
   - m_OriginalClip: {fileID: 7400000, guid: f7452bf347999b64cb39d320947552cc, type: 2}
