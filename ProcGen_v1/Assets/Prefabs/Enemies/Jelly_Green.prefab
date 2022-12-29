@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 6993182664776037263}
   - component: {fileID: 2583952383699307527}
   m_Layer: 6
-  m_Name: JellyPhysical
+  m_Name: Jelly_Green
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -128,7 +128,7 @@ Rigidbody2D:
   m_GravityScale: 1
   m_Material: {fileID: 0}
   m_Interpolate: 0
-  m_SleepingMode: 1
+  m_SleepingMode: 0
   m_CollisionDetection: 0
   m_Constraints: 0
 --- !u!114 &3840501559476754887
@@ -223,6 +223,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d4d1794d71a0df4284678212b1ec1cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  <TicketNumber>k__BackingField: 0
   HashCode: 0
   facing: -1
   state: 0

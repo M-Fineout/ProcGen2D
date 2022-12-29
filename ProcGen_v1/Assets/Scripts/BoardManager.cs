@@ -32,6 +32,7 @@ public class BoardManager : MonoBehaviour, IEventUser
     //Enemies
     public GameObject wizard;
     public GameObject jelly;
+    public GameObject odie;
 
     private int boardWidth = 24;
     private int boardLength = 24;
@@ -51,7 +52,7 @@ public class BoardManager : MonoBehaviour, IEventUser
     void Start()
     {
         RegisterEvents();
-        enemies = new List<GameObject> { wizard, jelly };
+        enemies = new List<GameObject> { wizard, jelly, odie };
 
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
     }                       
@@ -73,6 +74,7 @@ public class BoardManager : MonoBehaviour, IEventUser
         SetupPlayer();
         //SetupEnemiesTesting(wizard);
         SetupEnemiesTesting(jelly);
+        SetupEnemiesTesting(odie);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
@@ -203,27 +205,34 @@ public class BoardManager : MonoBehaviour, IEventUser
             //AddToBoard(2, 12, enemy);
         }
 
+        //if (enemy == jelly)
+        //{
+        ////Adds enemies to the top half of the board
+        //for (var x = 1; x < boardWidth - 1; x++)
+        //{
+        //    for (var y = 15; y < boardLength - 1; y++)
+        //    {
+        //        AddToBoard(x, y, enemy);
+        //    }
+        //}
+
+        //AddToBoard(5, 11, enemy);
+        //AddToBoard(7, 15, enemy);
+        //AddToBoard(7, 15, enemy);
         if (enemy == jelly)
         {
-            ////Adds enemies to the top half of the board
-            //for (var x = 1; x < boardWidth - 1; x++)
-            //{
-            //    for (var y = 15; y < boardLength - 1; y++)
-            //    {
-            //        AddToBoard(x, y, enemy);
-            //    }
-            //}
+            //AddToBoard(15, 21, enemy);
+           //AddToBoard(13, 18, enemy);
+            AddToBoard(3, 12, enemy);
+            AddToBoard(4, 2, enemy);
+        }
 
-            //AddToBoard(5, 11, enemy);
-            AddToBoard(7, 15, enemy);
-            AddToBoard(15, 21, enemy);
-            //AddToBoard(13, 18, enemy);
-            //AddToBoard(3, 12, enemy);
-            //AddToBoard(4, 2, enemy);
-            //AddToBoard(11, 19, enemy);
-            //AddToBoard(14, 18, enemy);
-            //AddToBoard(4, 9, enemy);
-            //AddToBoard(5, 9, enemy);
+        if (enemy == odie)
+        {
+            AddToBoard(11, 19, enemy);
+            AddToBoard(14, 18, enemy);
+            AddToBoard(4, 9, enemy);
+            AddToBoard(5, 9, enemy);
             //AddToBoard(5, 10, enemy);
             //AddToBoard(5, 11, enemy);
             //AddToBoard(2, 12, enemy);
@@ -234,15 +243,17 @@ public class BoardManager : MonoBehaviour, IEventUser
             //AddToBoard(2, 19, enemy);
             //AddToBoard(1, 15, enemy);
             //AddToBoard(9, 15, enemy);
-
-            //AddToBoard(15, 21, enemy);
-            //AddToBoard(13, 18, enemy);
-            //AddToBoard(3, 12, enemy);
-            //AddToBoard(4, 2, enemy);
-            //AddToBoard(11, 19, enemy);
-            //AddToBoard(14, 18, enemy);
-            //AddToBoard(7, 15, enemy);
         }
+
+
+        //AddToBoard(15, 21, enemy);
+        //AddToBoard(13, 18, enemy);
+        //AddToBoard(3, 12, enemy);
+        //AddToBoard(4, 2, enemy);
+        //AddToBoard(11, 19, enemy);
+        //AddToBoard(14, 18, enemy);
+        //AddToBoard(7, 15, enemy);
+        //}
     }
 
     private void AddToBoard(float x, float y, GameObject toInstantiate)

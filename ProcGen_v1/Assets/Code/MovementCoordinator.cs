@@ -55,7 +55,6 @@ namespace Assets.Code
                     current = currentNode.Value;
                 }
             }
-            Debug.Log("Current: " + current);
         }
 
         private void Initialize(EventMessage obj)

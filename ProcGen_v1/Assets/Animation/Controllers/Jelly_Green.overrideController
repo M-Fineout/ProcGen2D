@@ -6,7 +6,7 @@ AnimatorOverrideController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Jelly_Physical_AI
+  m_Name: Jelly_Green
   m_Controller: {fileID: 9100000, guid: 5a9c3313f931ebb438efcee6c2c368db, type: 2}
   m_Clips:
   - m_OriginalClip: {fileID: 7400000, guid: 55a2eca88b276c2449a4d4dc8e668e74, type: 2}

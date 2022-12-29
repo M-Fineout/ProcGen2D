@@ -47,8 +47,6 @@ namespace Assets.Scripts.Enemies
         private bool isMoving;
         private bool readyToMove;
         protected bool canAttack = true; //When set to false, should always remain in the patrol state
-        float moveX;
-        float moveY;
 
         //Move Refactor vars
         public float moveTime = 0.2f;           //Time it will take object to move, in seconds.
@@ -58,6 +56,8 @@ namespace Assets.Scripts.Enemies
         private bool smoothMove;
         private bool inMoveCooldown;
         private int layerMask;
+
+        [SerializeField]
         protected ConcurrentQueue<Vector2> lastPositions = new(); //TODO: Look into just using a List here
         private GameObject previousColliderClash; //TODO: Make int as represented hashcode  or instance_id of GO
         private int spacesToBacktrack;
@@ -86,7 +86,6 @@ namespace Assets.Scripts.Enemies
         {
             if (TicketNumber != Container.instance.MovementConductor.current) return;
 
-            Debug.Log("Found match");
             while (lastPositions.Count >= 5) //Once queue reaches size 5 or more, reduce it. Keep mem-footprint low
             {                
                 lastPositions.TryDequeue(out Vector2 result);
@@ -158,7 +157,7 @@ namespace Assets.Scripts.Enemies
                 sqrRemainingDistance = 0;
                 end = Vector2.zero;
                 StartCoroutine(nameof(MoveCooldown));
-            }
+            }            
         }
 
         private IEnumerator MoveCooldown()
@@ -279,6 +278,11 @@ namespace Assets.Scripts.Enemies
         {
             //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
             var normal = (end - (Vector2)transform.position).normalized;
+
+            //Keep values local so we always start from a static position
+            var moveX = 0.0f;
+            var moveY = 0.0f;
+
             if (Mathf.Round(normal.x) == 0)
             {
                 moveY = (int)Mathf.Round(normal.y);
@@ -379,69 +383,113 @@ namespace Assets.Scripts.Enemies
 
         /// <summary>
         /// When a gameObject has <see cref="Rigidbody2D.useFullKinematicContacts"/> set to true, collision callbacks will trigger.
-        /// We rely on this one to know that two kinematic rigidbodies got stuck on one another, and quickly revert their location back to the last position.
+        /// We rely on this one to know that two kinematic rigidbodies
+        /// got stuck on one another, and quickly revert their location back to the last position.
+        /// </summary>
+        /// <param name="collision"></param>
+        //private void OnCollisionStay2D(Collision2D collision)
+        //{
+        //    //Once stack reaches 5, remove the bottom value in the stack (do this so our mem-footprint remains relatively low)
+
+        //    //Only revert position when we collide with non-static gameObjects
+        //    if (collision.gameObject.CompareTag(Tags.Enemy) || collision.gameObject.CompareTag(Tags.Player))
+        //    {
+        //        //If we have collided with the object for the first time, track that for future passes
+        //        if (previousColliderClash != null && previousColliderClash != collision.gameObject)
+        //        {
+        //            previousColliderClash = collision.gameObject;
+        //            spacesToBacktrack = 1;
+        //        }
+        //        else //We are still stuck on the same object, try to revert to another position instead
+        //        {
+        //            spacesToBacktrack++;
+        //            Log.LogToConsole($"Stuck on {collision.gameObject.name} for {spacesToBacktrack} passes");
+        //        }
+
+        //        if (lastPositions.Count <= spacesToBacktrack) //We've exhausted all of our possibilities (this STILL happens)
+        //        {
+        //            //Another implementation of getting unstuck. We may want to run a breadth first search using this methodology
+        //            //instead of tracking previous locations
+
+        //            //This may honestly be the best approach and here's why:
+        //            //Assuming the character is 'stuck' and cannot move in any of the 4 directions, that means there are obstacles there
+        //            //It would appear natural for the enemy to thus remain in one location, until of course, it CAN move
+        //            //If we were to just iterate this for loop on each time this event was raised, this SHOULD eventually get us unstuck
+        //            //when it is safe to do so.
+
+        //            var directions = new List<Vector2> { Vector2.up, Vector2.down, Vector2.left, Vector2.right }; //May want to make this a const list
+
+        //            //now, try to pick a random spot in the four cardinal directions and travel to it
+        //            for (var i = 0; i < 4; i++) //Hardcoded 4 here, since we are removing elements from the collection
+        //            {
+        //                //We want to check randomly so we don't attempt to move each character in the same direction each time.
+        //                var direction = directions[UnityEngine.Random.Range(0, directions.Count)];
+        //                var candidate = (Vector2)transform.position + (direction * 0.16f);
+        //                var hit = Physics2D.Raycast(candidate, Vector2.zero); //Check a tile location for any collisions
+        //                if (hit.transform == null)
+        //                {
+        //                    Log.LogToConsole($"Moving stuck object after {i + 1} tries to {candidate.x}, {candidate.y}");
+        //                    Debug.DrawLine(transform.position, candidate, Color.green, 2f);
+        //                    transform.position = candidate;
+        //                    return;
+        //                }
+        //                else
+        //                {
+        //                    Log.LogToConsole($"In OnCollisionStay2D: Could not move to {candidate.x}, {candidate.y}");
+        //                    directions.Remove(direction);
+        //                }
+        //            }
+        //        }
+
+        //        var nextPreviousLocation = lastPositions.Skip(lastPositions.Count - spacesToBacktrack).First();
+        //        Debug.DrawLine(transform.position, nextPreviousLocation, Color.green, 2f);
+
+        //        transform.position = nextPreviousLocation;
+        //    }
+        //    Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
+        //}
+
+        /// <summary>
+        /// When a gameObject has <see cref="Rigidbody2D.useFullKinematicContacts"/> set to true, collision callbacks will trigger.
+        /// We rely on this one to know that two kinematic rigidbodies
+        /// got stuck on one another, and quickly revert their location somewhere else
         /// </summary>
         /// <param name="collision"></param>
         private void OnCollisionStay2D(Collision2D collision)
         {
-            //Once stack reaches 5, remove the bottom value in the stack (do this so our mem-footprint remains relatively low)
-
-            //Only revert position when we collide with non-static gameObjects
             if (collision.gameObject.CompareTag(Tags.Enemy) || collision.gameObject.CompareTag(Tags.Player))
             {
-                //If we have collided with the object for the first time, track that for future passes
-                if (previousColliderClash != null && previousColliderClash != collision.gameObject)
+                //Physics2D.IgnoreCollision(solidCollider, collision.collider, true);
+                Debug.Log($"OCS2D Collision occurred for {HashCode}");
+                //Debug.DrawLine(transform.position, lastPositions.Last(), Color.green, 2f);
+
+                var directions = new List<Vector2> { Vector2.up, Vector2.down, Vector2.left, Vector2.right }; //May want to make this a const list
+
+                //now, try to pick a random spot in the four cardinal directions and travel to it
+                for (var i = 0; i < 4; i++) //Hardcoded 4 here, since we are removing elements from the collection
                 {
-                    previousColliderClash = collision.gameObject;
-                    spacesToBacktrack = 1;
-                }
-                else //We are still stuck on the same object, try to revert to another position instead
-                {           
-                    spacesToBacktrack++;
-                    Log.LogToConsole($"Stuck on {collision.gameObject.name} for {spacesToBacktrack} passes");
-                }
-
-                if (lastPositions.Count <= spacesToBacktrack) //We've exhausted all of our possibilities (this STILL happens)
-                {
-                    //Another implementation of getting unstuck. We may want to run a breadth first search using this methodology
-                    //instead of tracking previous locations
-                    
-                    //This may honestly be the best approach and here's why:
-                    //Assuming the character is 'stuck' and cannot move in any of the 4 directions, that means there are obstacles there
-                    //It would appear natural for the enemy to thus remain in one location, until of course, it CAN move
-                    //If we were to just iterate this for loop on each time this event was raised, this SHOULD eventually get us unstuck
-                    //when it is safe to do so.
-
-                    var directions = new List<Vector2> { Vector2.up, Vector2.down, Vector2.left, Vector2.right }; //May want to make this a const list
-
-                    //now, try to pick a random spot in the four cardinal directions and travel to it
-                    for (var i = 0; i < 4; i++) //Hardcoded 4 here, since we are removing elements from the collection
+                    //We want to check randomly so we don't attempt to move each character in the same direction each time.
+                    var direction = directions[UnityEngine.Random.Range(0, directions.Count)];
+                    var candidate = (Vector2)transform.position + (direction * 0.16f);
+                    var hit = Physics2D.Raycast(candidate, Vector2.zero); //Check a tile location for any collisions
+                    if (hit.transform == null)
                     {
-                        //We want to check randomly so we don't attempt to move each character in the same direction each time.
-                        var direction = directions[UnityEngine.Random.Range(0, directions.Count)]; 
-                        var candidate = (Vector2)transform.position + (direction * 0.16f);
-                        var hit = Physics2D.Raycast(candidate, Vector2.zero); //Check a tile location for any collisions
-                        if (hit.transform == null)
-                        {
-                            Log.LogToConsole($"Moving stuck object after {i + 1} tries to {candidate.x}, {candidate.y}");
-                            Debug.DrawLine(transform.position, candidate, Color.green, 2f);
-                            transform.position = candidate;
-                            return;
-                        }
-                        else
-                        {
-                            Log.LogToConsole($"In OnCollisionStay2D: Could not move to {candidate.x}, {candidate.y}");
-                            directions.Remove(direction);
-                        }
+                        Debug.Log($"Moving stuck object after {i + 1} tries to {candidate.x}, {candidate.y}");
+                        Debug.DrawLine(transform.position, candidate, Color.green, 2f);
+                        transform.position = candidate;
+                        //rb.MovePosition(candidate);
+                        break;
+                    }
+                    else
+                    {
+                        Debug.Log($"In OnCollisionStay2D: Could not move to {candidate.x}, {candidate.y}");
+                        directions.Remove(direction);
                     }
                 }
-
-                var nextPreviousLocation = lastPositions.Skip(lastPositions.Count - spacesToBacktrack).First();
-                Debug.DrawLine(transform.position, nextPreviousLocation, Color.green, 2f);
-                
-                transform.position = nextPreviousLocation;
+                //transform.position = lastPositions.Last();
+                //ResetTravelPlans();
+                //Physics2D.IgnoreCollision(solidCollider, collision.collider, false);
             }
-            Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
         }
     }
 }

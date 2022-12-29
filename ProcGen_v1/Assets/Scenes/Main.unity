@@ -251,6 +251,7 @@ MonoBehaviour:
   player: {fileID: 5766128364228308998, guid: a7d276fdb4a35754c8614374913f0bb7, type: 3}
   wizard: {fileID: 1019551121673564932, guid: efbc6e4a35b80c546ac332f772797070, type: 3}
   jelly: {fileID: 8629475725538522953, guid: 6058d2db12aa15b459dfce87dafe7bec, type: 3}
+  odie: {fileID: 582354084720514796, guid: 9e32284a1dc219a44a0bd2d3b9d23ba2, type: 3}
   enemyCount: 0
 --- !u!4 &1566855945
 Transform:
