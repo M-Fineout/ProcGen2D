@@ -47,6 +47,7 @@ namespace Assets.Code
 
         private void CallNextTicket(EventMessage obj)
         {
+            Debug.Log("Ticket ended: " + obj.Payload);
             lock (currentLock)
             {
                 lock (ticketsLock)
@@ -85,6 +86,13 @@ namespace Assets.Code
                     tickets.AddLast(count);
                     currentNode = tickets.First;
                 }
+
+                //var currentNodeDebug = tickets.First;
+                //while (currentNodeDebug != null)
+                //{
+                //    Debug.Log(currentNodeDebug.Value);
+                //    currentNodeDebug = currentNodeDebug.Next;
+                //}
             }
 
             EventBus.instance.TriggerEvent(GameEvent.TicketFulfilled, new EventMessage { Payload = ((int)obj.Payload, count) });

@@ -15,6 +15,9 @@ namespace Assets.Scripts.Enemies
 {
     public class AStarEnemyNew : Enemy
     {
+        //TODO: Try "starting" enemies on delay
+        // Fix time avg. calculation so that it accounts for an entire "turn"
+
         protected override int Health { get; set; } = 3;
 
         private const int pathLength = 6;
@@ -49,7 +52,7 @@ namespace Assets.Scripts.Enemies
         protected bool canAttack = true; //When set to false, should always remain in the patrol state
 
         //Move Refactor vars
-        public float moveTime = 0.2f;           //Time it will take object to move, in seconds.
+        public float moveTime = .2f;           //Time it will take object to move, in seconds.
         private float inverseMoveTime;          //Used to make movement more efficient.
         private Vector2 end;
         private float sqrRemainingDistance;
@@ -61,6 +64,33 @@ namespace Assets.Scripts.Enemies
         protected ConcurrentQueue<Vector2> lastPositions = new(); //TODO: Look into just using a List here
         private GameObject previousColliderClash; //TODO: Make int as represented hashcode  or instance_id of GO
         private int spacesToBacktrack;
+
+        //DEBUG
+        private Vector2 lastPos;
+
+        [SerializeField]
+        private Vector2 nextPos;
+
+        [SerializeField]
+        private int moveCount;
+
+        private bool init = true;
+        private bool isBlocked;
+
+        //Turn time tracking
+        private DateTime timeTurnStart;
+        private DateTime timeTurnEnd;
+        private int timeTurnDelta;
+        [SerializeField]
+        private double avgTurnTime;
+        int turnCount;
+        int turnTimeSum;
+        private bool turnStarted;
+
+        //inbetween turn timetracking
+        int inBetweenTurnTimeSum;
+        [SerializeField]
+        private double avgInBetweenTurnTime;
 
         protected virtual void Start()
         {
@@ -86,6 +116,20 @@ namespace Assets.Scripts.Enemies
         {
             if (TicketNumber != Container.instance.MovementConductor.current) return;
 
+            if (!turnStarted)
+            {
+                turnStarted = true;
+                timeTurnStart = DateTime.Now;
+
+                //We've had at least one turn so we can start recording deltas
+                if (turnCount > 0)
+                {
+                    var inBetweenTurnTime = (timeTurnStart - timeTurnEnd).Milliseconds;
+                    inBetweenTurnTimeSum += inBetweenTurnTime;
+                    avgInBetweenTurnTime = inBetweenTurnTimeSum / turnCount;
+                }
+            }
+
             while (lastPositions.Count >= 5) //Once queue reaches size 5 or more, reduce it. Keep mem-footprint low
             {                
                 lastPositions.TryDequeue(out Vector2 result);
@@ -94,7 +138,7 @@ namespace Assets.Scripts.Enemies
 
             if (isAttacking || calculatingRoute || isMoving || inMoveCooldown)
             {
-                TurnFinished();
+                //TurnFinished();
                 return;
             }
 
@@ -116,13 +160,25 @@ namespace Assets.Scripts.Enemies
                     Attack();
                     break;
             }
-
-            TurnFinished();
+            
+            if (isBlocked)
+            {
+                isBlocked = false;
+                TurnFinished();
+            }
         }
 
         private void TurnFinished()
         {
-            EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
+            //DEBUG
+            turnCount++;
+            timeTurnEnd = DateTime.Now;
+            timeTurnDelta = (timeTurnEnd - timeTurnStart).Milliseconds;
+            turnTimeSum += timeTurnDelta;
+            avgTurnTime = turnTimeSum / turnCount;
+          
+            EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new() { Payload = TicketNumber });
+            turnStarted = false;
         }
 
         /// <summary>
@@ -131,6 +187,7 @@ namespace Assets.Scripts.Enemies
         /// </summary>
         private void FixedUpdate()
         {
+            if (TicketNumber != Container.instance.MovementConductor.current) return;
             if (!readyToMove || isAttacking) return;
 
             if (sqrRemainingDistance > float.Epsilon)
@@ -147,6 +204,7 @@ namespace Assets.Scripts.Enemies
             }
             else
             {
+                //Debug.Break();
                 //We made a successful movement
                 previousColliderClash = null;
 
@@ -156,7 +214,9 @@ namespace Assets.Scripts.Enemies
                 isMoving = false;
                 sqrRemainingDistance = 0;
                 end = Vector2.zero;
-                StartCoroutine(nameof(MoveCooldown));
+                //StartCoroutine(nameof(MoveCooldown));
+                moveCount++;                
+                TurnFinished();
             }            
         }
 
@@ -186,6 +246,8 @@ namespace Assets.Scripts.Enemies
         private void Pursue()
         {
             Travel();
+            if (waitingForRoute) return;
+
             var distanceFromPlayer = GetPlayerDistance();
             if (distanceFromPlayer > pursuitRadius)
             {
@@ -204,6 +266,8 @@ namespace Assets.Scripts.Enemies
         private void Patrol()
         {
             Travel();
+            //if (waitingForRoute) return;
+
             if (!canAttack) return;
             var distanceFromPlayer = GetPlayerDistance();
             if (distanceFromPlayer <= pursuitRadius)
@@ -215,6 +279,7 @@ namespace Assets.Scripts.Enemies
         //Either start new route. or grab next goal pos.
         private void Travel()
         {
+            //Debug.Break();
             if (currentTravelWaypoint > travelWaypoints.Count - 1)
             {
                 ResetTravelPlans();
@@ -235,6 +300,7 @@ namespace Assets.Scripts.Enemies
             Log.LogToConsole($"Next waypoint: {travelWaypoints[currentTravelWaypoint].x}, {travelWaypoints[currentTravelWaypoint].y}");
             // Calculate end position based on the direction parameters passed in when calling Move.
             end = start + (travelWaypoints[currentTravelWaypoint] - start);
+            nextPos = travelWaypoints[currentTravelWaypoint];
 
             Log.LogToConsole($"End: {end.x}, {end.y}");
             //Disable the boxCollider so that linecast doesn't hit this object's own collider.
@@ -245,7 +311,8 @@ namespace Assets.Scripts.Enemies
             RaycastHit2D hit;
 
             //Cast a line from start point to end point checking collision on blockingLayer.
-            //Debug.DrawLine(start, end, Color.red, 0.2f);
+            Debug.DrawLine(start, end, Color.blue, 0.2f);
+            Debug.DrawLine(end, new Vector2(end.x - 0.01f, end.y), Color.red, 0.2f);
             hit = Physics2D.Linecast(start, end, layerMask);
 
             //Re-enable boxCollider after linecast
@@ -257,6 +324,7 @@ namespace Assets.Scripts.Enemies
             {
                 Log.LogToConsole("No hit detected");
                 lastPositions.Enqueue(start);
+                lastPos = start;
                 sqrRemainingDistance = (start - end).sqrMagnitude;
                 readyToMove = true;
             }
@@ -269,7 +337,12 @@ namespace Assets.Scripts.Enemies
                     isMoving = false;
                     return;
                 }
-                Log.LogToConsole($"Hit: {hit.transform.name}");
+       
+                Debug.DrawLine(start, end, Color.blue, 0.2f);
+                Debug.Log("Can't move");
+                isBlocked = true;
+                //Debug.Break();
+                //Log.LogToConsole($"Hit: {hit.transform.name}");
                 ResetTravelPlans();
             }
         }
@@ -310,7 +383,16 @@ namespace Assets.Scripts.Enemies
                 target = new Vector2(player.transform.position.x, player.transform.position.y); //Once again, we are normalizing player pos here!
             }
 
-            travelWaypoints = worker.CalculateRoute(target);
+           
+            //if (init)
+            //{
+            //    travelWaypoints = new List<Vector2> { new Vector2(1.6f, 1.12f) }; //right 1.76, 1.12 //left 1.44, 1.12
+            //    init = false;
+            //}
+            //else
+            //{
+                travelWaypoints = worker.CalculateRoute(target);
+            //}
 
             target = null;
 
@@ -449,6 +531,15 @@ namespace Assets.Scripts.Enemies
         //    Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
         //}
 
+        //private void OnCollisionStay2D(Collision2D collision)
+        //{
+        //    if (collision.gameObject.CompareTag(Tags.Enemy) || collision.gameObject.CompareTag(Tags.Player))
+        //    {
+        //        transform.position = lastPos;
+        //        Log.LogToConsole($"OnCollisionStay with {collision.transform.name}");
+        //    }           
+        //}
+
         /// <summary>
         /// When a gameObject has <see cref="Rigidbody2D.useFullKinematicContacts"/> set to true, collision callbacks will trigger.
         /// We rely on this one to know that two kinematic rigidbodies
@@ -459,6 +550,7 @@ namespace Assets.Scripts.Enemies
         {
             if (collision.gameObject.CompareTag(Tags.Enemy) || collision.gameObject.CompareTag(Tags.Player))
             {
+                Debug.Break();
                 //Physics2D.IgnoreCollision(solidCollider, collision.collider, true);
                 Debug.Log($"OCS2D Collision occurred for {HashCode}");
                 //Debug.DrawLine(transform.position, lastPositions.Last(), Color.green, 2f);
@@ -486,6 +578,7 @@ namespace Assets.Scripts.Enemies
                         directions.Remove(direction);
                     }
                 }
+                //Debug.Break();
                 //transform.position = lastPositions.Last();
                 //ResetTravelPlans();
                 //Physics2D.IgnoreCollision(solidCollider, collision.collider, false);

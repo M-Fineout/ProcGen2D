@@ -83,16 +83,16 @@ public class PlayerController : MonoBehaviour, ILoggable, IEventUser
 
         inverseMoveTime = 1 / moveTime;
         layerMask = LayerMask.GetMask(new string[] { "BlockingLayer" });
-        EventBus.instance.TriggerEvent(GameEvent.TicketRequested, new EventMessage { Payload = InstanceId });
+        //EventBus.instance.TriggerEvent(GameEvent.TicketRequested, new EventMessage { Payload = InstanceId });
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (TicketNumber != Container.instance.MovementConductor.current) return;
+        //if (TicketNumber != Container.instance.MovementConductor.current) return;
         if (isAttacking || isMoving || !canMove)
         {
-            EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
+            //EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
             return;
         }
 
@@ -123,7 +123,7 @@ public class PlayerController : MonoBehaviour, ILoggable, IEventUser
             moveY = -moveY;
         }
         moveDirection = new Vector2(moveX, moveY);
-        EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
+        //EventBus.instance.TriggerEvent(GameEvent.TurnFinished, new());
     }
 
     private void FixedUpdate()
