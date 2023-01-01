@@ -17,7 +17,13 @@ namespace Assets.Scripts.Enemies
         public Type Type { get; set; }
 
         [field: SerializeField]
-        protected int TicketNumber { get; private set; }
+        protected int TicketNumber { get; private set; } = -1;
+
+        [field: SerializeField]
+        protected int GroupNumber { get; private set; } = -1;
+
+        [field: SerializeField]
+        protected bool IsCurrentTurn { get; set; }
 
         public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
 
@@ -41,10 +47,11 @@ namespace Assets.Scripts.Enemies
         }
         private void StoreTicketNumber(EventMessage obj)
         {
-            var payload = ((int, int))obj.Payload;
+            var payload = ((int, int, int))obj.Payload;
             if (payload.Item1 != InstanceId) return;
 
-            TicketNumber = payload.Item2;
+            GroupNumber = payload.Item2;
+            TicketNumber = payload.Item3;
         }
 
         public virtual void TakeDamage(int damage)
@@ -65,7 +72,7 @@ namespace Assets.Scripts.Enemies
         protected void Die()
         {            
             Destroy(gameObject);
-            EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = TicketNumber });          
+            EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = (GroupNumber, TicketNumber) });          
         }
 
         private IEnumerator Damaged()

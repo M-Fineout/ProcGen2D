@@ -92,6 +92,9 @@ namespace Assets.Scripts.Enemies
         [SerializeField]
         private double avgInBetweenTurnTime;
 
+        [SerializeField]
+        private bool ticketSubmitted;
+
         protected virtual void Start()
         {
             player = GameObject.FindGameObjectWithTag(Tags.Player);
@@ -103,6 +106,9 @@ namespace Assets.Scripts.Enemies
             rb = GetComponent<Rigidbody2D>();
             anim = GetComponent<Animator>();
 
+
+            Registrations.Add(GameEvent.CurrentTurn, CheckCurrentTurn);
+            EventBus.instance.RegisterCallback(GameEvent.CurrentTurn, CheckCurrentTurn);
             base.Prime();
 
             OnboardWorker();
@@ -112,10 +118,20 @@ namespace Assets.Scripts.Enemies
             layerMask = LayerMask.GetMask(new string[] { "BlockingLayer", "Player" });
         }
 
+        private void CheckCurrentTurn(EventMessage obj)
+        {
+            //We always mark ticket submitted as false, we can do so since this callback will only occur between group changes
+            //(even if the group number stays the same, I.E. there is only one group left)
+            ticketSubmitted = false;
+
+            IsCurrentTurn = (int)obj.Payload == GroupNumber;
+        }
+
         private void Update()
         {
-            if (TicketNumber != Container.instance.MovementConductor.current) return;
+            if (!IsCurrentTurn || ticketSubmitted) return;
 
+            //DEBUG
             if (!turnStarted)
             {
                 turnStarted = true;
@@ -170,6 +186,8 @@ namespace Assets.Scripts.Enemies
 
         private void TurnFinished()
         {
+            ticketSubmitted = true;
+
             //DEBUG
             turnCount++;
             timeTurnEnd = DateTime.Now;
@@ -187,7 +205,10 @@ namespace Assets.Scripts.Enemies
         /// </summary>
         private void FixedUpdate()
         {
-            if (TicketNumber != Container.instance.MovementConductor.current) return;
+            //The FixedUpdate loop is returning so quick that a "single" group left does not have time to flip "ticketSubmitted" to false,
+            //Meaning it will never take a turn. We need to find a better way to signify to ourselves that we submitted a ticket without allowing this to happen
+            if (!IsCurrentTurn || ticketSubmitted) return;
+
             if (!readyToMove || isAttacking) return;
 
             if (sqrRemainingDistance > float.Epsilon)
@@ -550,7 +571,7 @@ namespace Assets.Scripts.Enemies
         {
             if (collision.gameObject.CompareTag(Tags.Enemy) || collision.gameObject.CompareTag(Tags.Player))
             {
-                Debug.Break();
+                //Debug.Break();
                 //Physics2D.IgnoreCollision(solidCollider, collision.collider, true);
                 Debug.Log($"OCS2D Collision occurred for {HashCode}");
                 //Debug.DrawLine(transform.position, lastPositions.Last(), Color.green, 2f);

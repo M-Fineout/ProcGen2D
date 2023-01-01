@@ -226,22 +226,22 @@ public class BoardManager : MonoBehaviour, IEventUser
             AddToBoard(3, 12, enemy);
             AddToBoard(4, 2, enemy);
 
-            //AddToBoard(9, 7, enemy);
-            //AddToBoard(11, 7, enemy);
-            //AddToBoard(11, 19, enemy);
-            //AddToBoard(14, 18, enemy);
-            //AddToBoard(4, 9, enemy);
-            //AddToBoard(5, 9, enemy);
-            //AddToBoard(5, 10, enemy);
-            //AddToBoard(5, 11, enemy);
-            //AddToBoard(2, 12, enemy);
-            //AddToBoard(16, 20, enemy);
-            //AddToBoard(3, 18, enemy);
-            //AddToBoard(6, 12, enemy);
-            //AddToBoard(6, 2, enemy);
-            //AddToBoard(2, 19, enemy);
-            //AddToBoard(1, 15, enemy);
-            //AddToBoard(9, 15, enemy);
+            AddToBoard(9, 7, enemy);
+            AddToBoard(11, 7, enemy);
+            AddToBoard(11, 19, enemy);
+            AddToBoard(14, 18, enemy);
+            AddToBoard(4, 9, enemy);
+            AddToBoard(5, 9, enemy);
+            AddToBoard(5, 10, enemy);
+            AddToBoard(5, 11, enemy);
+            AddToBoard(2, 12, enemy);
+            AddToBoard(16, 20, enemy);
+            AddToBoard(3, 18, enemy);
+            AddToBoard(6, 12, enemy);
+            AddToBoard(6, 2, enemy);
+            AddToBoard(2, 19, enemy);
+            AddToBoard(1, 15, enemy);
+            AddToBoard(9, 15, enemy);
         }
 
         if (enemy == odie)

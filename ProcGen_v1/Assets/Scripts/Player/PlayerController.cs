@@ -524,7 +524,7 @@ public class PlayerController : MonoBehaviour, ILoggable, IEventUser
     private void OnDestroy()
     {
         UnregisterEvents();
-        EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = TicketNumber });
+        //EventBus.instance.TriggerEvent(GameEvent.EnemyDefeated, new EventMessage { Payload = TicketNumber });
     }
 
     private void OnCollisionStay2D(Collision2D collision)
@@ -537,11 +537,11 @@ public class PlayerController : MonoBehaviour, ILoggable, IEventUser
     {
         Registrations.Add(GameEvent.PlayerHit, PlayerHit);
         Registrations.Add(GameEvent.PlayerDropped, PlayerDropped);
-        Registrations.Add(GameEvent.TicketFulfilled, StoreTicketNumber);
+        //Registrations.Add(GameEvent.TicketFulfilled, StoreTicketNumber);
 
         EventBus.instance.RegisterCallback(GameEvent.PlayerHit, PlayerHit);
         EventBus.instance.RegisterCallback(GameEvent.PlayerDropped, PlayerDropped);
-        EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
+        //EventBus.instance.RegisterCallback(GameEvent.TicketFulfilled, StoreTicketNumber);
     }
 
     public void UnregisterEvents()
