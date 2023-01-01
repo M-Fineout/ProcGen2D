@@ -396,7 +396,9 @@ namespace Assets.Scripts.Enemies
                 return;
             }
 
+            //TODO: Why does this happen? We should find a more elegant solution, or at least the reason, rather than have this magic code in here.
             if (start == end) return;
+
             //If we made it this far, we are eligible to move to that space, but we want to ensure the following:
             //We want to check our destination and the tile past that for any potential AI that could also want to move to our destination
             //We need to figure out the direction of our end vector2; This should correlate to facing.
@@ -448,15 +450,10 @@ namespace Assets.Scripts.Enemies
             Debug.DrawLine(end, dir3, Color.blue, 0.2f);
             Debug.DrawLine(dir3, new Vector2(dir3.x - 0.01f, dir3.y), Color.red, 0.2f);
 
-            //solidCollider.enabled = false;
-            //triggerCollider.enabled = false;
-
+            //NOTE: We don't need to flip our colliders on and off since we are raycasting outside of our own space.
             hit1 = Physics2D.Linecast(end, dir1, layerMask);
             hit2 = Physics2D.Linecast(end, dir2, layerMask);
             hit3 = Physics2D.Linecast(end, dir3, layerMask);
-
-            //solidCollider.enabled = true;
-            //triggerCollider.enabled = true;
 
             //TODO: Refactor this, are we sure we want to just reset our travel plans here? Is there a better option?
             if (hit1.transform != null)
