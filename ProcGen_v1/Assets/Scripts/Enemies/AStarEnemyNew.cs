@@ -54,7 +54,7 @@ namespace Assets.Scripts.Enemies
         //Move Refactor vars
         public float moveTime = .2f;           //Time it will take object to move, in seconds.
         private float inverseMoveTime;          //Used to make movement more efficient.
-        private Vector2 end;
+        public Vector2 end;
         private float sqrRemainingDistance;
         private bool smoothMove;
         private bool inMoveCooldown;
@@ -94,6 +94,8 @@ namespace Assets.Scripts.Enemies
 
         [SerializeField]
         private bool ticketSubmitted;
+
+        private float moveX, moveY;
 
         protected virtual void Start()
         {
@@ -321,9 +323,32 @@ namespace Assets.Scripts.Enemies
             Log.LogToConsole($"Next waypoint: {travelWaypoints[currentTravelWaypoint].x}, {travelWaypoints[currentTravelWaypoint].y}");
             // Calculate end position based on the direction parameters passed in when calling Move.
             end = start + (travelWaypoints[currentTravelWaypoint] - start);
+
+            //Check facing
+            //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
+            var normal = (end - (Vector2)transform.position).normalized;
+
+            //Reset values so we always start from a static position
+            moveX = 0.0f;
+            moveY = 0.0f;
+
+            if (Mathf.Round(normal.x) == 0)
+            {
+                moveY = (int)Mathf.Round(normal.y);
+                facing = moveY >= 0 ? Facing.Up : Facing.Down;
+            }
+            else
+            {
+                moveX = normal.x;
+                facing = moveX > 0 ? Facing.Right : Facing.Left;
+            }
+
+            //DEBUG
             nextPos = travelWaypoints[currentTravelWaypoint];
 
             Log.LogToConsole($"End: {end.x}, {end.y}");
+
+            //DANGER!! -> This is likely the *only* way an enemy will collide with another enemy. We need to remove this in the future!
             //Disable the boxCollider so that linecast doesn't hit this object's own collider.
             solidCollider.enabled = false;
             triggerCollider.enabled = false;
@@ -331,9 +356,12 @@ namespace Assets.Scripts.Enemies
             //Hit will store whatever our linecast hits when Move is called.
             RaycastHit2D hit;
 
+            //DEBUG
+            //Debug.DrawLine(start, end, Color.blue, 0.2f);
+            //Debug.DrawLine(end, new Vector2(end.x - 0.01f, end.y), Color.red, 0.2f);
+
             //Cast a line from start point to end point checking collision on blockingLayer.
-            Debug.DrawLine(start, end, Color.blue, 0.2f);
-            Debug.DrawLine(end, new Vector2(end.x - 0.01f, end.y), Color.red, 0.2f);
+            //This checks our destination tile
             hit = Physics2D.Linecast(start, end, layerMask);
 
             //Re-enable boxCollider after linecast
@@ -358,36 +386,113 @@ namespace Assets.Scripts.Enemies
                     isMoving = false;
                     return;
                 }
-       
+
                 Debug.DrawLine(start, end, Color.blue, 0.2f);
                 Debug.Log("Can't move");
                 isBlocked = true;
                 //Debug.Break();
                 //Log.LogToConsole($"Hit: {hit.transform.name}");
                 ResetTravelPlans();
+                return;
+            }
+
+            if (start == end) return;
+            //If we made it this far, we are eligible to move to that space, but we want to ensure the following:
+            //We want to check our destination and the tile past that for any potential AI that could also want to move to our destination
+            //We need to figure out the direction of our end vector2; This should correlate to facing.
+
+            Vector2 dir1 = new();
+            Vector2 dir2 = new();
+            Vector2 dir3 = new();
+
+            switch (facing)
+            {
+                case Facing.Up:
+                    //If we are moving up, we want to check above, left, and right of our of our destination tile.
+                    dir1 = new Vector2(end.x, end.y + 0.16f); //above
+                    dir2 = new Vector2(end.x - 0.16f, end.y); //left
+                    dir3 = new Vector2(end.x + 0.16f, end.y); //right
+                    break;
+                case Facing.Down:
+                    //If we are moving down, we want to check below, left, and right of our of our destination tile.
+                    dir1 = new Vector2(end.x, end.y - 0.16f); //below
+                    dir2 = new Vector2(end.x - 0.16f, end.y); //left
+                    dir3 = new Vector2(end.x + 0.16f, end.y); //right
+                    break;
+                case Facing.Right:
+                    //If we are moving right, we want to check above, below, and right of our of our destination tile.
+                    dir1 = new Vector2(end.x, end.y + 0.16f); //above
+                    dir2 = new Vector2(end.x, end.y - 0.16f); //below
+                    dir3 = new Vector2(end.x + 0.16f, end.y); //right
+                    break;
+                case Facing.Left:
+                    //If we are moving left, we want to check above, below, and left of our of our destination tile.
+                    dir1 = new Vector2(end.x, end.y + 0.16f); //above
+                    dir2 = new Vector2(end.x, end.y - 0.16f); //below
+                    dir3 = new Vector2(end.x - 0.16f, end.y); //left
+                    break;
+            }
+
+            //Make our casts
+            RaycastHit2D hit1;
+            RaycastHit2D hit2;
+            RaycastHit2D hit3;
+
+            //DEBUG
+            Debug.DrawLine(end, dir1, Color.blue, 0.2f);
+            Debug.DrawLine(dir1, new Vector2(dir1.x - 0.01f, dir1.y), Color.red, 0.2f);
+            //DEBUG
+            Debug.DrawLine(end, dir2, Color.blue, 0.2f);
+            Debug.DrawLine(dir2, new Vector2(dir2.x - 0.01f, dir2.y), Color.red, 0.2f);
+            //DEBUG
+            Debug.DrawLine(end, dir3, Color.blue, 0.2f);
+            Debug.DrawLine(dir3, new Vector2(dir3.x - 0.01f, dir3.y), Color.red, 0.2f);
+
+            //solidCollider.enabled = false;
+            //triggerCollider.enabled = false;
+
+            hit1 = Physics2D.Linecast(end, dir1, layerMask);
+            hit2 = Physics2D.Linecast(end, dir2, layerMask);
+            hit3 = Physics2D.Linecast(end, dir3, layerMask);
+
+            //solidCollider.enabled = true;
+            //triggerCollider.enabled = true;
+
+            //TODO: Refactor this, are we sure we want to just reset our travel plans here? Is there a better option?
+            if (hit1.transform != null)
+            {
+                var enemy = hit1.transform.GetComponent<AStarEnemyNew>();
+                if (enemy != null && end == enemy.end)
+                {
+                    Debug.Log($"Encountered enemy moving in same direction as self; X: {end.x}, Y: {end.y}");
+                    ResetTravelPlans();
+                    return;
+                }
+            }
+            if (hit2.transform != null)
+            {
+                var enemy = hit2.transform.GetComponent<AStarEnemyNew>();
+                if (enemy != null && end == enemy.end)
+                {
+                    Debug.Log($"Encountered enemy moving in same direction as self; X: {end.x}, Y: {end.y}");
+                    ResetTravelPlans();
+                    return;
+                }
+            }
+            if (hit3.transform != null)
+            {
+                var enemy = hit3.transform.GetComponent<AStarEnemyNew>();
+                if (enemy != null && end == enemy.end)
+                {
+                    Debug.Log($"Encountered enemy moving in same direction as self; X: {end.x}, Y: {end.y}");
+                    ResetTravelPlans();
+                    return;
+                }
             }
         }
 
         private void AnimateMove()
         {
-            //when we round a normalized vector we get 1 of the 4 direction vectors (Vector2.down, Vector2.up, Vector2.right, Vector2.left)
-            var normal = (end - (Vector2)transform.position).normalized;
-
-            //Keep values local so we always start from a static position
-            var moveX = 0.0f;
-            var moveY = 0.0f;
-
-            if (Mathf.Round(normal.x) == 0)
-            {
-                moveY = (int)Mathf.Round(normal.y);
-                facing = moveY >= 0 ? Facing.Up : Facing.Down;
-            }
-            else
-            {
-                moveX = normal.x;
-                facing = moveX > 0 ? Facing.Right : Facing.Left;
-            }
-
             anim.SetFloat("Facing", (float)facing);
             anim.SetBool("isMoving", isMoving);
             anim.SetFloat("Horizontal", moveX);
@@ -403,8 +508,7 @@ namespace Assets.Scripts.Enemies
             {
                 target = new Vector2(player.transform.position.x, player.transform.position.y); //Once again, we are normalizing player pos here!
             }
-
-           
+         
             //if (init)
             //{
             //    travelWaypoints = new List<Vector2> { new Vector2(1.6f, 1.12f) }; //right 1.76, 1.12 //left 1.44, 1.12
@@ -571,7 +675,7 @@ namespace Assets.Scripts.Enemies
         {
             if (collision.gameObject.CompareTag(Tags.Enemy) || collision.gameObject.CompareTag(Tags.Player))
             {
-                //Debug.Break();
+                Debug.Break();
                 //Physics2D.IgnoreCollision(solidCollider, collision.collider, true);
                 Debug.Log($"OCS2D Collision occurred for {HashCode}");
                 //Debug.DrawLine(transform.position, lastPositions.Last(), Color.green, 2f);
