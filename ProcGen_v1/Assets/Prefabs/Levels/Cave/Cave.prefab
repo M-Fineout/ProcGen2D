@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6772569143880887058
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6772569143880887057}
+  - component: {fileID: 3587205682738316138}
+  m_Layer: 0
+  m_Name: Cave
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6772569143880887057
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6772569143880887058}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.7660251, y: 1.9757899, z: 0.034471326}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3587205682738316138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6772569143880887058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81c4a08c0ff8a9a45999898353a7af80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  exit: {fileID: 327224316755577083, guid: f73f2e96b44c05d4b8837263e17c3b8e, type: 3}
+  floor: {fileID: 3496770350783214076, guid: 4609c5a471d35f44bb4827e46d7d7f51, type: 3}
+  leftWall: {fileID: 2592816964557780318, guid: 817a0593f39a8a0469e7d3d5d4fb0244, type: 3}
+  rightWall: {fileID: 5570442703757352279, guid: 7868177d276ed4543a0737c84d5a8961, type: 3}
+  topWall: {fileID: 230601113264043393, guid: be741157a1ce94a438a5d012f76099a3, type: 3}
+  bottomWall: {fileID: 230601113264043393, guid: be741157a1ce94a438a5d012f76099a3, type: 3}
+  topLeftWall: {fileID: 6475295680163643444, guid: bb639e98d24db9d49b95b68381275809, type: 3}
+  topRightWall: {fileID: 6866350160351765049, guid: 87260144ad7e63f4ebdba45f9a7f8157, type: 3}
+  bottomLeftWall: {fileID: 9117997894049764164, guid: e96194fbd25bc74439e6c4cceb58ee43, type: 3}
+  bottomRightWall: {fileID: 28757980227064696, guid: f94f95afc4f65dd45a1660600e217ac9, type: 3}
+  obstacles:
+  - {fileID: 2097839489671452237, guid: f27c5127010d95e4398e0e19385cf5d9, type: 3}
+  - {fileID: 6630334313499114505, guid: d8f60d1381e118b4ca5d3e9430c3583b, type: 3}
+  - {fileID: 2678817238076307743, guid: d233a49fbd5cda049ba78702630b98d7, type: 3}
+  - {fileID: 5727083101084805729, guid: bd677b59ccf0732459d7ca1733e973e7, type: 3}
+  enemies:
+  - {fileID: 8629475725538522953, guid: 6058d2db12aa15b459dfce87dafe7bec, type: 3}

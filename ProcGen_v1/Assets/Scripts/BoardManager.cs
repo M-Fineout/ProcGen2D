@@ -1,6 +1,7 @@
 using Assets.Code.Global;
 using Assets.Code.Interface;
 using Assets.Code.Util;
+using Assets.Scripts.Levels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,27 +13,14 @@ public class BoardManager : MonoBehaviour, IEventUser
 {
     private const float TILE_SIZE = 0.16f;
 
-    public GameObject floor;
-    public GameObject leftWall;
-    public GameObject rightWall;
-    public GameObject topWall;
-    public GameObject bottomWall;
-    public GameObject topLeftWall;
-    public GameObject topRightWall;
-    public GameObject bottomLeftWall;
-    public GameObject bottomRightWall;
-
-    //Exit
-    public GameObject exit;
-    private GameObject exit_ref;
-
     //Chars
     public GameObject player;
 
-    //Enemies
-    public GameObject wizard;
-    public GameObject jelly;
-    public GameObject odie;
+    [field: SerializeField]
+    private int currentLevel;
+    public List<ConfigurationBase> LevelConfigurations; 
+
+    private GameObject exit_ref;
 
     private int boardWidth = 24;
     private int boardLength = 24;
@@ -43,8 +31,7 @@ public class BoardManager : MonoBehaviour, IEventUser
     private List<Vector2> EmptyTileSpaces = new();
     private List<Vector2> WallTileSpaces = new();
     private Dictionary<Vector2, int> Blueprints = new();
-               
-    private List<GameObject> enemies;           
+         
     public int enemyCount;
 
     public Dictionary<GameEvent, Action<EventMessage>> Registrations { get; set; } = new();
@@ -52,8 +39,6 @@ public class BoardManager : MonoBehaviour, IEventUser
     void Start()
     {
         RegisterEvents();
-        enemies = new List<GameObject> { wizard, jelly, odie };
-
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
     }                       
 
@@ -67,29 +52,29 @@ public class BoardManager : MonoBehaviour, IEventUser
         SetupFloor();
         SetupWalls();
 
-        //SetupObstructionsBoxWithDoor();
         SetupObstructionsConeMaze();
 
         SetupExit();
         SetupPlayer();
-        //SetupEnemiesTesting(wizard);
-        SetupEnemiesTesting(jelly);
-        SetupEnemiesTesting(odie);
 
-        EmptyTileSpaces = BoardMap.Where(x => x.Value == floor).Select(x => x.Key).ToList();
+        SetupEnemiesTesting(LevelConfigurations[currentLevel].enemies[0]);
+
+        EmptyTileSpaces = BoardMap.Where(x => x.Value == LevelConfigurations[currentLevel].floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
-        var enemySpaces = BoardMap.Where(x => x.Value == jelly).Select(x => x.Key).ToList();
+        //var enemySpaces = BoardMap.Where(x => x.Value == jelly).Select(x => x.Key).ToList();
 
         EmptyTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
-        enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
+       //enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         WallTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 1));
     }
 
     private bool IsWall(GameObject gameObject)
     {
-        return gameObject == leftWall || gameObject == rightWall || gameObject == topWall ||
-               gameObject == bottomWall || gameObject == topLeftWall || gameObject == topRightWall || gameObject == bottomLeftWall ||
-               gameObject == bottomRightWall;
+        return gameObject == LevelConfigurations[currentLevel].leftWall || gameObject == LevelConfigurations[currentLevel].rightWall || 
+               gameObject == LevelConfigurations[currentLevel].topWall ||
+               gameObject == LevelConfigurations[currentLevel].bottomWall || gameObject == LevelConfigurations[currentLevel].topLeftWall || 
+               gameObject == LevelConfigurations[currentLevel].topRightWall || gameObject == LevelConfigurations[currentLevel].bottomLeftWall ||
+               gameObject == LevelConfigurations[currentLevel].bottomRightWall || LevelConfigurations[currentLevel].obstacles.Contains(gameObject);
     }
 
     private void SetupFloor()
@@ -98,7 +83,7 @@ public class BoardManager : MonoBehaviour, IEventUser
         {
             for (var y = 1; y < boardLength - 1; y++)
             {
-                AddToBoard(x, y, floor);
+                AddToBoard(x, y, LevelConfigurations[currentLevel].floor);
             }
         }
     }
@@ -108,48 +93,49 @@ public class BoardManager : MonoBehaviour, IEventUser
         //Sides
         for (var y = 1; y < boardLength - 1; y++)
         {
-            AddToBoard(0, y, leftWall);
-            AddToBoard((boardWidth - 1), y, rightWall);
+            AddToBoard(0, y, LevelConfigurations[currentLevel].leftWall);
+            AddToBoard((boardWidth - 1), y, LevelConfigurations[currentLevel].rightWall);
         }
 
         for (var x = 1; x < boardWidth - 1; x++)
         {
             //TODO: Fix Duplicate work!!
-            AddToBoard(x, 0, bottomWall); 
-            AddToBoard(x, (boardLength - 1), topWall);
+            AddToBoard(x, 0, LevelConfigurations[currentLevel].bottomWall); 
+            AddToBoard(x, (boardLength - 1), LevelConfigurations[currentLevel].topWall);
         }
 
         //Corner pieces
-        AddToBoard(0, 0, bottomLeftWall);
-        AddToBoard((boardWidth - 1), 0, bottomRightWall);
-        AddToBoard(0, (boardLength - 1), topLeftWall);
-        AddToBoard((boardWidth - 1), (boardLength - 1), topRightWall);
+        AddToBoard(0, 0, LevelConfigurations[currentLevel].bottomLeftWall);
+        AddToBoard((boardWidth - 1), 0, LevelConfigurations[currentLevel].bottomRightWall);
+        AddToBoard(0, (boardLength - 1), LevelConfigurations[currentLevel].topLeftWall);
+        AddToBoard((boardWidth - 1), (boardLength - 1), LevelConfigurations[currentLevel].topRightWall);
 
     }
 
-    private void SetupObstructionsBoxWithDoor()
-    {
-        for (var y = 7; y < 17; y++)
-        {
-            if (y == 12) continue;
-            AddToBoard(7, y, bottomWall);
-        }
+    //private void SetupObstructionsBoxWithDoor()
+    //{
+    //    for (var y = 7; y < 17; y++)
+    //    {
+    //        if (y == 12) continue;
+    //        AddToBoard(7, y, bottomWall);
+    //    }
 
-        for (var y = 7; y < 17; y++)
-        {
-            AddToBoard(17, y, bottomWall);
-        }
+    //    for (var y = 7; y < 17; y++)
+    //    {
+    //        AddToBoard(17, y, bottomWall);
+    //    }
 
-        for (var x = 7; x < 18; x++)
-        {
-            AddToBoard(x, 7, bottomWall);
-            AddToBoard(x, 17, bottomWall);
-        }
+    //    for (var x = 7; x < 18; x++)
+    //    {
+    //        AddToBoard(x, 7, bottomWall);
+    //        AddToBoard(x, 17, bottomWall);
+    //    }
 
-    }
+    //}
 
     private void SetupObstructionsConeMaze()
     {
+        var index = 1;
         var count = 0;
         for (var x = 1; x < boardWidth - 1; x++)
         {
@@ -157,8 +143,9 @@ public class BoardManager : MonoBehaviour, IEventUser
             {
                 if (count == 8)
                 {
-                    AddToBoard(x, y, bottomWall);
+                    AddToBoard(x, y, LevelConfigurations[currentLevel].obstacles[index]);
                     count = 0;
+                    index = index == LevelConfigurations[currentLevel].obstacles.Count - 1 ? 0 : index + 1;
                 }
                 count++;
             }
@@ -167,7 +154,7 @@ public class BoardManager : MonoBehaviour, IEventUser
 
     private void SetupExit()
     {
-        AddToBoard(boardWidth - 2, boardLength - 2, exit);
+        AddToBoard(boardWidth - 2, boardLength - 2, LevelConfigurations[currentLevel].exit);
     }
 
     private void SetupPlayer()
@@ -177,33 +164,33 @@ public class BoardManager : MonoBehaviour, IEventUser
 
     private void SetupEnemiesTesting(GameObject enemy)
     {
-        if (enemy == wizard)
-        {
-            //Adds enemies to the top half of the board
-            //for (var x = 1; x < boardWidth - 1; x++)
-            //{
-            //    for (var y = 15; y < boardLength - 1; y++)
-            //    {
-            //        AddToBoard(x, y, enemy);
-            //    }
-            //}
+        //if (enemy == wizard)
+        //{
+        //    //Adds enemies to the top half of the board
+        //    //for (var x = 1; x < boardWidth - 1; x++)
+        //    //{
+        //    //    for (var y = 15; y < boardLength - 1; y++)
+        //    //    {
+        //    //        AddToBoard(x, y, enemy);
+        //    //    }
+        //    //}
 
-            //AddToBoard(3, 10, enemy);
-            //AddToBoard(8, 3, enemy);
-            AddToBoard(8, 2, enemy);
-            AddToBoard(3, 5, enemy);
-            //AddToBoard(3, 6, enemy);
-            //AddToBoard(3, 7, enemy);
-            //AddToBoard(4, 8, enemy);
-            //AddToBoard(4, 9, enemy);
-            //AddToBoard(4, 10, enemy);
-            //AddToBoard(4, 11, enemy);
-            //AddToBoard(4, 12, enemy);
-            //AddToBoard(5, 9, enemy);
-            //AddToBoard(5, 10, enemy);
-            //AddToBoard(5, 11, enemy);
-            //AddToBoard(2, 12, enemy);
-        }
+        //    //AddToBoard(3, 10, enemy);
+        //    //AddToBoard(8, 3, enemy);
+        //    AddToBoard(8, 2, enemy);
+        //    AddToBoard(3, 5, enemy);
+        //    //AddToBoard(3, 6, enemy);
+        //    //AddToBoard(3, 7, enemy);
+        //    //AddToBoard(4, 8, enemy);
+        //    //AddToBoard(4, 9, enemy);
+        //    //AddToBoard(4, 10, enemy);
+        //    //AddToBoard(4, 11, enemy);
+        //    //AddToBoard(4, 12, enemy);
+        //    //AddToBoard(5, 9, enemy);
+        //    //AddToBoard(5, 10, enemy);
+        //    //AddToBoard(5, 11, enemy);
+        //    //AddToBoard(2, 12, enemy);
+        //}
 
         //if (enemy == jelly)
         //{
@@ -219,8 +206,8 @@ public class BoardManager : MonoBehaviour, IEventUser
         //AddToBoard(5, 11, enemy);
         //AddToBoard(7, 15, enemy);
         //AddToBoard(7, 15, enemy);
-        if (enemy == jelly)
-        {
+        //if (enemy == jelly)
+        //{
             AddToBoard(15, 21, enemy);
             AddToBoard(13, 18, enemy);
             AddToBoard(3, 12, enemy);
@@ -242,10 +229,10 @@ public class BoardManager : MonoBehaviour, IEventUser
             AddToBoard(2, 19, enemy);
             AddToBoard(1, 15, enemy);
             AddToBoard(9, 15, enemy);
-        }
+        //}
 
-        if (enemy == odie)
-        {
+        //if (enemy == odie)
+        //{
             //AddToBoard(11, 19, enemy);
             //AddToBoard(14, 18, enemy);
             //AddToBoard(4, 9, enemy);
@@ -260,7 +247,7 @@ public class BoardManager : MonoBehaviour, IEventUser
             //AddToBoard(2, 19, enemy);
             //AddToBoard(1, 15, enemy);
             //AddToBoard(9, 15, enemy);
-        }
+        //}
 
 
         //AddToBoard(15, 21, enemy);
@@ -281,7 +268,7 @@ public class BoardManager : MonoBehaviour, IEventUser
         GameObject instance = Instantiate(toInstantiate, new Vector3(x * TILE_SIZE, y * TILE_SIZE, 0f), Quaternion.identity);
 
         // Should we be mapping out the actual instances instead in board map?? That would alleviate this problem, but open up new ones instead...
-        if (toInstantiate == exit)
+        if (toInstantiate == LevelConfigurations[currentLevel].exit)
         {
             exit_ref = instance;
         }
@@ -298,7 +285,7 @@ public class BoardManager : MonoBehaviour, IEventUser
         }
 
         //Add to total enemy count
-        if (enemies.Contains(toInstantiate))
+        if (LevelConfigurations[currentLevel].enemies.Contains(toInstantiate))
         {
             enemyCount++;
         }
