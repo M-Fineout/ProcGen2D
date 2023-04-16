@@ -23,6 +23,6 @@ namespace Assets.Scripts.Levels
 
         public List<GameObject> obstacles;
 
-        public List<GameObject> enemies;
+        public List<GameObject> enemies;  
     }
 }

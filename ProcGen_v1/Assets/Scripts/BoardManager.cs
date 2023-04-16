@@ -40,9 +40,14 @@ public class BoardManager : MonoBehaviour, IEventUser
     {
         RegisterEvents();
         EventBus.instance.TriggerEvent(GameEvent.HeartBeating, new EventMessage());
-    }                       
+    }
 
     #region Build
+
+    //BUILD TYPES:
+    //1 Bottom-Left to Top-Right; Left and Right traversal
+    //2 Bottom-Left to Top-Right; Up and Down traversal
+
 
     void SetupScene(EventMessage message)
     {
@@ -50,14 +55,49 @@ public class BoardManager : MonoBehaviour, IEventUser
         boardHolder = new GameObject("Board").transform;
 
         SetupFloor();
-        SetupWalls();
+        SetupBorder();
 
-        SetupObstructionsConeMaze();
+        //SetupObstructionsConeMaze();
 
         SetupExit();
         SetupPlayer();
 
-        SetupEnemiesTesting(LevelConfigurations[currentLevel].enemies[0]);
+        var cave = (CaveConfiguration)LevelConfigurations[currentLevel];
+
+        var pathCount = UnityEngine.Random.Range(1, 4);
+        var paths = new List<(int, int)>[pathCount];
+        for (var i = 0; i < pathCount; i++)
+        {
+            var pathType = UnityEngine.Random.Range(0, 2);
+            if (pathType == 0)
+            {
+                paths[i] = cave.GenerateBlueprints(22, 22);
+            }
+            if (pathType == 1)
+            {
+                paths[i] = cave.GenerateBlueprintsTD(22, 22);
+            }
+        }
+        //DEBUG
+        if (pathCount > 0)
+        {
+            DrawPath(paths[0], Color.red);
+        }
+        if (pathCount > 1)
+        {
+            DrawPath(paths[1], Color.blue);
+        }
+        if (pathCount > 2)
+        {
+            DrawPath(paths[2], Color.green);
+        }
+
+        var pathDistinct = paths.SelectMany(x => x).Distinct().ToList();
+
+        SetupObstacles(pathDistinct);
+
+        SetupEnemiesOnPath(pathDistinct);
+        //SetupEnemiesTesting(LevelConfigurations[currentLevel].enemies[0]);
 
         EmptyTileSpaces = BoardMap.Where(x => x.Value == LevelConfigurations[currentLevel].floor).Select(x => x.Key).ToList();
         WallTileSpaces = BoardMap.Where(x => IsWall(x.Value)).Select(x => x.Key).ToList();
@@ -66,6 +106,24 @@ public class BoardManager : MonoBehaviour, IEventUser
         EmptyTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
        //enemySpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 0));
         WallTileSpaces.ForEach(x => Blueprints.Add(new Vector2((float)Math.Round(x.x, 2), (float)Math.Round(x.y, 2)), 1));
+    }
+
+    private void DrawPath(List<(int, int)> path, Color color)
+    {
+        //DEBUG
+        foreach (var point in path)
+        {
+            Debug.Log($"{point.Item1}, {point.Item2}");
+        }
+        Debug.Log(path.Count);
+
+        //Connect all points on path to see randomly generated paths
+        for (var i = 0; i < path.Count - 1; i++)
+        {
+            var start = new Vector3(path[i].Item1 * TILE_SIZE, path[i].Item2 * TILE_SIZE, 0);
+            var end = new Vector3(path[i + 1].Item1 * TILE_SIZE, path[i + 1].Item2 * TILE_SIZE, 0);
+            Debug.DrawLine(start, end, color, 5f);
+        }    
     }
 
     private bool IsWall(GameObject gameObject)
@@ -88,7 +146,7 @@ public class BoardManager : MonoBehaviour, IEventUser
         }
     }
 
-    private void SetupWalls()
+    private void SetupBorder()
     {
         //Sides
         for (var y = 1; y < boardLength - 1; y++)
@@ -112,6 +170,33 @@ public class BoardManager : MonoBehaviour, IEventUser
 
     }
 
+    private void SetupObstacles(List<(int, int)> path)
+    {
+        //TODO: 23 is (22-1); 22 is our blueprint dimension. Convert this to a variable with context
+        for (var x = 1; x < 23; x++)
+        {
+            for (var y = 1; y < 23; y++)
+            {
+                if (!path.Contains((x, y)))
+                {
+                    //Get random obstacle to populate with
+                    var obstacleRoll = UnityEngine.Random.Range(0, LevelConfigurations[currentLevel].obstacles.Count);
+                    AddToBoard(x, y, LevelConfigurations[currentLevel].obstacles[obstacleRoll]);
+                }                        
+            }
+        }
+    }
+
+    private void SetupEnemiesOnPath(List<(int, int)> path)
+    {
+        var enemyCount = 2;
+        for (var i = 0; i < enemyCount; i++)
+        {
+            var positionRoll = UnityEngine.Random.Range(0, path.Count);
+            var enemyPos = path[positionRoll];
+            AddToBoard(enemyPos.Item1, enemyPos.Item2, LevelConfigurations[currentLevel].enemies[0]);
+        }
+    }
     //private void SetupObstructionsBoxWithDoor()
     //{
     //    for (var y = 7; y < 17; y++)
@@ -274,7 +359,7 @@ public class BoardManager : MonoBehaviour, IEventUser
         }
 
         //AddToBoardMap();
-        var mapPos = new Vector2(x * TILE_SIZE, y * TILE_SIZE);
+        var mapPos = new Vector2(x * TILE_SIZE, y * TILE_SIZE); //May need a math.round here
         if (!BoardMap.ContainsKey(mapPos))
         {
             BoardMap.Add(mapPos, toInstantiate);

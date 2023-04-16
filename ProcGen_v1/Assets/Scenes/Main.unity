@@ -240,24 +240,6 @@ MonoBehaviour:
   currentLevel: 0
   LevelConfigurations:
   - {fileID: 3587205682738316138, guid: 66379493e78b2d84fbf8141904b43360, type: 3}
-  floor: {fileID: 3496770350783214076, guid: 4609c5a471d35f44bb4827e46d7d7f51, type: 3}
-  leftWall: {fileID: 2592816964557780318, guid: 817a0593f39a8a0469e7d3d5d4fb0244, type: 3}
-  rightWall: {fileID: 5570442703757352279, guid: 7868177d276ed4543a0737c84d5a8961, type: 3}
-  topWall: {fileID: 230601113264043393, guid: be741157a1ce94a438a5d012f76099a3, type: 3}
-  bottomWall: {fileID: 5752642687039134818, guid: 87f9cc47b9540b14e8dc05f8490dfdf4, type: 3}
-  topLeftWall: {fileID: 6475295680163643444, guid: bb639e98d24db9d49b95b68381275809, type: 3}
-  topRightWall: {fileID: 6866350160351765049, guid: 87260144ad7e63f4ebdba45f9a7f8157, type: 3}
-  bottomLeftWall: {fileID: 9117997894049764164, guid: e96194fbd25bc74439e6c4cceb58ee43, type: 3}
-  bottomRightWall: {fileID: 28757980227064696, guid: f94f95afc4f65dd45a1660600e217ac9, type: 3}
-  obstacles:
-  - {fileID: 2097839489671452237, guid: f27c5127010d95e4398e0e19385cf5d9, type: 3}
-  - {fileID: 6630334313499114505, guid: d8f60d1381e118b4ca5d3e9430c3583b, type: 3}
-  - {fileID: 2678817238076307743, guid: d233a49fbd5cda049ba78702630b98d7, type: 3}
-  - {fileID: 5727083101084805729, guid: bd677b59ccf0732459d7ca1733e973e7, type: 3}
-  exit: {fileID: 327224316755577083, guid: f73f2e96b44c05d4b8837263e17c3b8e, type: 3}
-  wizard: {fileID: 1019551121673564932, guid: efbc6e4a35b80c546ac332f772797070, type: 3}
-  jelly: {fileID: 8629475725538522953, guid: 6058d2db12aa15b459dfce87dafe7bec, type: 3}
-  odie: {fileID: 582354084720514796, guid: 9e32284a1dc219a44a0bd2d3b9d23ba2, type: 3}
   enemyCount: 0
 --- !u!4 &1566855945
 Transform:

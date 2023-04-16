@@ -55,9 +55,9 @@ MonoBehaviour:
   bottomLeftWall: {fileID: 9117997894049764164, guid: e96194fbd25bc74439e6c4cceb58ee43, type: 3}
   bottomRightWall: {fileID: 28757980227064696, guid: f94f95afc4f65dd45a1660600e217ac9, type: 3}
   obstacles:
-  - {fileID: 2097839489671452237, guid: f27c5127010d95e4398e0e19385cf5d9, type: 3}
-  - {fileID: 6630334313499114505, guid: d8f60d1381e118b4ca5d3e9430c3583b, type: 3}
-  - {fileID: 2678817238076307743, guid: d233a49fbd5cda049ba78702630b98d7, type: 3}
-  - {fileID: 5727083101084805729, guid: bd677b59ccf0732459d7ca1733e973e7, type: 3}
+  - {fileID: 6713071969885060971, guid: 52786ba3312dbe148a2bda3615a2f1a8, type: 3}
+  - {fileID: 4655722946247060918, guid: 53108f5b4176b8645bbe0eff5aa8b244, type: 3}
+  - {fileID: 6693488159858794149, guid: b120bd73de505c943b323952425d3885, type: 3}
+  - {fileID: 8695338381406511878, guid: 80ade0b5a66ee4e4d89a3f6622d07295, type: 3}
   enemies:
   - {fileID: 8629475725538522953, guid: 6058d2db12aa15b459dfce87dafe7bec, type: 3}
